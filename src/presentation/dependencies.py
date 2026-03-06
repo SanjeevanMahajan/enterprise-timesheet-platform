@@ -6,7 +6,10 @@ This is the ONLY place where infrastructure imports leak into the presentation l
 
 from __future__ import annotations
 
-from src.application.interfaces.event_publisher import EventPublisher
+import os
+
+import redis.asyncio as aioredis
+
 from src.application.interfaces.unit_of_work import UnitOfWork
 from src.application.use_cases.projects.create_project import CreateProjectUseCase
 from src.application.use_cases.projects.delete_project import DeleteProjectUseCase
@@ -29,9 +32,9 @@ from src.application.use_cases.timesheets.reject_timesheet import RejectTimeshee
 from src.application.use_cases.timesheets.submit_timesheet import SubmitTimesheetUseCase
 from src.application.use_cases.users.authenticate_user import AuthenticateUserUseCase
 from src.application.use_cases.users.register_user import RegisterUserUseCase
-from src.domain.events.base import DomainEvent
 from src.infrastructure.database.session import async_session_factory
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
+from src.infrastructure.messaging.redis_event_publisher import RedisEventPublisher
 from src.infrastructure.security.jwt_handler import JWTTokenService
 from src.infrastructure.security.password import BcryptPasswordHasher
 
@@ -41,15 +44,9 @@ from src.infrastructure.security.password import BcryptPasswordHasher
 _hasher = BcryptPasswordHasher()
 _token_service = JWTTokenService()
 
-
-class _NoOpEventPublisher(EventPublisher):
-    """Placeholder until Pub/Sub is wired up."""
-
-    async def publish(self, event: DomainEvent) -> None:
-        pass  # TODO: replace with Google Cloud Pub/Sub implementation
-
-
-_event_publisher = _NoOpEventPublisher()
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+_redis = aioredis.from_url(_redis_url, decode_responses=True)
+_event_publisher = RedisEventPublisher(_redis)
 
 
 # -- Factory helpers -----------------------------------------------------------
@@ -61,7 +58,7 @@ def _uow() -> UnitOfWork:
 # -- Auth use cases ------------------------------------------------------------
 
 def get_register_user_use_case() -> RegisterUserUseCase:
-    return RegisterUserUseCase(_uow(), _hasher)
+    return RegisterUserUseCase(_uow(), _hasher, _event_publisher)
 
 
 def get_authenticate_user_use_case() -> AuthenticateUserUseCase:

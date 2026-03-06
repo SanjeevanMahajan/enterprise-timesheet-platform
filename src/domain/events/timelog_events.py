@@ -14,6 +14,7 @@ class TimeLogCreated(DomainEvent):
     project_id: uuid.UUID = uuid.UUID(int=0)
     hours: float = 0.0
     log_date: date = date.min
+    description: str = ""
 
 
 @dataclass(frozen=True)

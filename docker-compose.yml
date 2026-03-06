@@ -6,10 +6,42 @@ services:
     environment:
       DATABASE_URL: "postgresql+asyncpg://timesheet:timesheet@db:5432/timesheet"
       JWT_SECRET_KEY: "local-dev-secret-change-in-prod"
+      REDIS_URL: "redis://redis:6379/0"
       DEBUG: "true"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notifier:
+    build: services/notification-service
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ai-service:
+    build: services/ai-service
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
   db:

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Boolean, Date, Float, String, Text
+from sqlalchemy import Boolean, Date, Float, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,3 +24,8 @@ class TimeLogModel(Base):
     log_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, default="")
     billable: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # AI-generated insights (populated asynchronously by ai-service)
+    ai_category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    ai_quality_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ai_suggestion: Mapped[str | None] = mapped_column(Text, nullable=True)

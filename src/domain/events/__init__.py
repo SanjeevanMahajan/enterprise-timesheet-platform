@@ -8,6 +8,7 @@ from src.domain.events.timesheet_events import (
     TimesheetRejected,
     TimesheetSubmitted,
 )
+from src.domain.events.user_events import UserRegistered
 
 __all__ = [
     "ClientCreated",
@@ -22,4 +23,5 @@ __all__ = [
     "TimesheetApproved",
     "TimesheetRejected",
     "TimesheetSubmitted",
+    "UserRegistered",
 ]

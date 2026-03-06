@@ -47,6 +47,9 @@ class TimeLog(Entity):
         self.hourly_rate = hourly_rate
         self.timer_started_at = timer_started_at
         self.timer_stopped_at = timer_stopped_at
+        self.ai_category: str | None = None
+        self.ai_quality_score: int | None = None
+        self.ai_suggestion: str | None = None
 
     def update_hours(self, hours: float) -> None:
         if hours <= 0 or hours > self.MAX_DAILY_HOURS:

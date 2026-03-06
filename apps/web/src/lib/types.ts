@@ -85,6 +85,9 @@ export interface TimeLogResponse {
   timer_started_at: string | null;
   timer_stopped_at: string | null;
   is_timer_running: boolean;
+  ai_category: string | null;
+  ai_quality_score: number | null;
+  ai_suggestion: string | null;
   created_at: string;
   updated_at: string;
 }

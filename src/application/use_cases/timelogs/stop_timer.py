@@ -52,6 +52,9 @@ class StopTimerUseCase:
             timer_started_at=time_log.timer_started_at,
             timer_stopped_at=time_log.timer_stopped_at,
             is_timer_running=time_log.is_timer_running,
+            ai_category=time_log.ai_category,
+            ai_quality_score=time_log.ai_quality_score,
+            ai_suggestion=time_log.ai_suggestion,
             created_at=time_log.created_at,
             updated_at=time_log.updated_at,
         )

@@ -17,7 +17,7 @@ class SQLAlchemyTimeLogRepository(
     model_class = TimeLogModel
 
     def _to_entity(self, model: TimeLogModel) -> TimeLog:
-        return TimeLog(
+        entity = TimeLog(
             id=model.id,
             tenant_id=model.tenant_id,
             user_id=model.user_id,
@@ -30,6 +30,10 @@ class SQLAlchemyTimeLogRepository(
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
+        entity.ai_category = model.ai_category
+        entity.ai_quality_score = model.ai_quality_score
+        entity.ai_suggestion = model.ai_suggestion
+        return entity
 
     def _to_model(self, entity: TimeLog) -> TimeLogModel:
         return TimeLogModel(
@@ -42,6 +46,9 @@ class SQLAlchemyTimeLogRepository(
             log_date=entity.log_date,
             description=entity.description,
             billable=entity.billable,
+            ai_category=entity.ai_category,
+            ai_quality_score=entity.ai_quality_score,
+            ai_suggestion=entity.ai_suggestion,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
         )

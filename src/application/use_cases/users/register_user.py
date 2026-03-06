@@ -4,8 +4,10 @@ import uuid
 from abc import ABC, abstractmethod
 
 from src.application.dto.user_dto import CreateUserRequest, UserResponse
+from src.application.interfaces.event_publisher import EventPublisher
 from src.application.interfaces.unit_of_work import UnitOfWork
 from src.domain.entities.user import User
+from src.domain.events.user_events import UserRegistered
 from src.domain.exceptions import DuplicateEntityError
 
 
@@ -18,9 +20,15 @@ class PasswordHasher(ABC):
 
 
 class RegisterUserUseCase:
-    def __init__(self, uow: UnitOfWork, hasher: PasswordHasher) -> None:
+    def __init__(
+        self,
+        uow: UnitOfWork,
+        hasher: PasswordHasher,
+        events: EventPublisher,
+    ) -> None:
         self._uow = uow
         self._hasher = hasher
+        self._events = events
 
     async def execute(
         self,
@@ -41,6 +49,15 @@ class RegisterUserUseCase:
 
             user = await self._uow.users.add(user)
             await self._uow.commit()
+
+        await self._events.publish(
+            UserRegistered(
+                tenant_id=tenant_id,
+                user_id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+            )
+        )
 
         return UserResponse(
             id=user.id,

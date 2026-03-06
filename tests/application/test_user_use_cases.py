@@ -15,8 +15,8 @@ from tests.fakes.unit_of_work import FakeUnitOfWork
 
 class TestRegisterUser:
     @pytest.fixture
-    def use_case(self, uow: FakeUnitOfWork, hasher: FakePasswordHasher):
-        return RegisterUserUseCase(uow, hasher)
+    def use_case(self, uow: FakeUnitOfWork, hasher: FakePasswordHasher, events: FakeEventPublisher):
+        return RegisterUserUseCase(uow, hasher, events)
 
     @pytest.mark.asyncio
     async def test_registers_new_user(self, use_case, uow):

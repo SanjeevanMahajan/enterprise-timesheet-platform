@@ -20,6 +20,65 @@ function formatHours(hours: number): string {
   return `${h}h ${m}m`;
 }
 
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  Development: { bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
+  Maintenance: { bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400" },
+  Meetings: { bg: "bg-violet-500/10", text: "text-violet-600 dark:text-violet-400" },
+  Testing: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
+  "Code Review": { bg: "bg-cyan-500/10", text: "text-cyan-600 dark:text-cyan-400" },
+  Documentation: { bg: "bg-pink-500/10", text: "text-pink-600 dark:text-pink-400" },
+  DevOps: { bg: "bg-orange-500/10", text: "text-orange-600 dark:text-orange-400" },
+  Design: { bg: "bg-fuchsia-500/10", text: "text-fuchsia-600 dark:text-fuchsia-400" },
+  Refactoring: { bg: "bg-yellow-500/10", text: "text-yellow-600 dark:text-yellow-400" },
+  Research: { bg: "bg-teal-500/10", text: "text-teal-600 dark:text-teal-400" },
+  General: { bg: "bg-zinc-500/10", text: "text-zinc-500" },
+};
+
+function CategoryBadge({ category }: { category: string }) {
+  const colors = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.General;
+  return (
+    <span
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${colors.bg} ${colors.text}`}
+    >
+      {category}
+    </span>
+  );
+}
+
+function QualityWarning({ score, suggestion }: { score: number; suggestion: string }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <span
+      className="relative inline-flex cursor-help"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <svg
+        className="h-4 w-4 text-warning"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+        />
+      </svg>
+      {showTooltip && (
+        <span className="absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground shadow-lg">
+          <span className="font-semibold text-warning">Quality: {score}/100</span>
+          <br />
+          {suggestion}
+          <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-border" />
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function TimeLogsTable({ refreshKey }: { refreshKey?: number }) {
   const [logs, setLogs] = useState<TimeLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,6 +153,9 @@ export function TimeLogsTable({ refreshKey }: { refreshKey?: number }) {
                 <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
                   Description
                 </th>
+                <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
+                  AI Category
+                </th>
                 <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
                   Duration
                 </th>
@@ -114,9 +176,28 @@ export function TimeLogsTable({ refreshKey }: { refreshKey?: number }) {
                   <td className="px-6 py-3 whitespace-nowrap text-[13px] text-muted">
                     {formatDate(log.log_date)}
                   </td>
-                  <td className="px-6 py-3 max-w-[240px] truncate text-[13px] font-medium">
-                    {log.description || (
-                      <span className="text-muted-foreground font-normal">Untitled</span>
+                  <td className="px-6 py-3 max-w-[240px] text-[13px] font-medium">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">
+                        {log.description || (
+                          <span className="text-muted-foreground font-normal">Untitled</span>
+                        )}
+                      </span>
+                      {log.ai_quality_score !== null &&
+                        log.ai_quality_score < 50 &&
+                        log.ai_suggestion && (
+                          <QualityWarning
+                            score={log.ai_quality_score}
+                            suggestion={log.ai_suggestion}
+                          />
+                        )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-3 whitespace-nowrap">
+                    {log.ai_category ? (
+                      <CategoryBadge category={log.ai_category} />
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">—</span>
                     )}
                   </td>
                   <td className="px-6 py-3 text-right whitespace-nowrap">

@@ -62,6 +62,9 @@ class ListTimeLogsUseCase:
                 timer_started_at=tl.timer_started_at,
                 timer_stopped_at=tl.timer_stopped_at,
                 is_timer_running=tl.is_timer_running,
+                ai_category=tl.ai_category,
+                ai_quality_score=tl.ai_quality_score,
+                ai_suggestion=tl.ai_suggestion,
                 created_at=tl.created_at,
                 updated_at=tl.updated_at,
             )

@@ -47,6 +47,9 @@ class TimeLogResponse(BaseModel):
     timer_started_at: datetime | None
     timer_stopped_at: datetime | None
     is_timer_running: bool
+    ai_category: str | None = None
+    ai_quality_score: int | None = None
+    ai_suggestion: str | None = None
     created_at: datetime
     updated_at: datetime
 
