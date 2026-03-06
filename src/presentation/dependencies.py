@@ -1,0 +1,142 @@
+"""Composition root: wires concrete infrastructure into application use cases.
+
+Each function here is a FastAPI dependency that constructs a fully-wired use case.
+This is the ONLY place where infrastructure imports leak into the presentation layer.
+"""
+
+from __future__ import annotations
+
+from src.application.interfaces.event_publisher import EventPublisher
+from src.application.interfaces.unit_of_work import UnitOfWork
+from src.application.use_cases.projects.create_project import CreateProjectUseCase
+from src.application.use_cases.projects.delete_project import DeleteProjectUseCase
+from src.application.use_cases.projects.get_project import GetProjectUseCase
+from src.application.use_cases.projects.list_projects import ListProjectsUseCase
+from src.application.use_cases.projects.update_project import UpdateProjectUseCase
+from src.application.use_cases.tasks.assign_task import AssignTaskUseCase
+from src.application.use_cases.tasks.create_task import CreateTaskUseCase
+from src.application.use_cases.tasks.get_task import GetTaskUseCase
+from src.application.use_cases.tasks.list_tasks import ListTasksUseCase
+from src.application.use_cases.tasks.update_task import UpdateTaskUseCase
+from src.application.use_cases.timelogs.create_time_log import CreateTimeLogUseCase
+from src.application.use_cases.timelogs.list_time_logs import ListTimeLogsUseCase
+from src.application.use_cases.timelogs.update_time_log import UpdateTimeLogUseCase
+from src.application.use_cases.timesheets.approve_timesheet import ApproveTimesheetUseCase
+from src.application.use_cases.timesheets.get_timesheet import GetTimesheetUseCase
+from src.application.use_cases.timesheets.reject_timesheet import RejectTimesheetUseCase
+from src.application.use_cases.timesheets.submit_timesheet import SubmitTimesheetUseCase
+from src.application.use_cases.users.authenticate_user import AuthenticateUserUseCase
+from src.application.use_cases.users.register_user import RegisterUserUseCase
+from src.domain.events.base import DomainEvent
+from src.infrastructure.database.session import async_session_factory
+from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
+from src.infrastructure.security.jwt_handler import JWTTokenService
+from src.infrastructure.security.password import BcryptPasswordHasher
+
+
+# -- Singletons (stateless, safe to reuse) ------------------------------------
+
+_hasher = BcryptPasswordHasher()
+_token_service = JWTTokenService()
+
+
+class _NoOpEventPublisher(EventPublisher):
+    """Placeholder until Pub/Sub is wired up."""
+
+    async def publish(self, event: DomainEvent) -> None:
+        pass  # TODO: replace with Google Cloud Pub/Sub implementation
+
+
+_event_publisher = _NoOpEventPublisher()
+
+
+# -- Factory helpers -----------------------------------------------------------
+
+def _uow() -> UnitOfWork:
+    return SQLAlchemyUnitOfWork(async_session_factory)
+
+
+# -- Auth use cases ------------------------------------------------------------
+
+def get_register_user_use_case() -> RegisterUserUseCase:
+    return RegisterUserUseCase(_uow(), _hasher)
+
+
+def get_authenticate_user_use_case() -> AuthenticateUserUseCase:
+    return AuthenticateUserUseCase(_uow(), _hasher, _token_service)
+
+
+# -- Project use cases ---------------------------------------------------------
+
+def get_create_project_use_case() -> CreateProjectUseCase:
+    return CreateProjectUseCase(_uow(), _event_publisher)
+
+
+def get_update_project_use_case() -> UpdateProjectUseCase:
+    return UpdateProjectUseCase(_uow(), _event_publisher)
+
+
+def get_get_project_use_case() -> GetProjectUseCase:
+    return GetProjectUseCase(_uow())
+
+
+def get_list_projects_use_case() -> ListProjectsUseCase:
+    return ListProjectsUseCase(_uow())
+
+
+def get_delete_project_use_case() -> DeleteProjectUseCase:
+    return DeleteProjectUseCase(_uow())
+
+
+# -- Task use cases ------------------------------------------------------------
+
+def get_create_task_use_case() -> CreateTaskUseCase:
+    return CreateTaskUseCase(_uow(), _event_publisher)
+
+
+def get_update_task_use_case() -> UpdateTaskUseCase:
+    return UpdateTaskUseCase(_uow(), _event_publisher)
+
+
+def get_assign_task_use_case() -> AssignTaskUseCase:
+    return AssignTaskUseCase(_uow(), _event_publisher)
+
+
+def get_get_task_use_case() -> GetTaskUseCase:
+    return GetTaskUseCase(_uow())
+
+
+def get_list_tasks_use_case() -> ListTasksUseCase:
+    return ListTasksUseCase(_uow())
+
+
+# -- TimeLog use cases ---------------------------------------------------------
+
+def get_create_time_log_use_case() -> CreateTimeLogUseCase:
+    return CreateTimeLogUseCase(_uow(), _event_publisher)
+
+
+def get_update_time_log_use_case() -> UpdateTimeLogUseCase:
+    return UpdateTimeLogUseCase(_uow())
+
+
+def get_list_time_logs_use_case() -> ListTimeLogsUseCase:
+    return ListTimeLogsUseCase(_uow())
+
+
+# -- Timesheet use cases -------------------------------------------------------
+
+def get_submit_timesheet_use_case() -> SubmitTimesheetUseCase:
+    return SubmitTimesheetUseCase(_uow(), _event_publisher)
+
+
+def get_approve_timesheet_use_case() -> ApproveTimesheetUseCase:
+    return ApproveTimesheetUseCase(_uow(), _event_publisher)
+
+
+def get_reject_timesheet_use_case() -> RejectTimesheetUseCase:
+    return RejectTimesheetUseCase(_uow(), _event_publisher)
+
+
+def get_get_timesheet_use_case() -> GetTimesheetUseCase:
+    return GetTimesheetUseCase(_uow())
