@@ -15,6 +15,8 @@ class TimeLogCreated(DomainEvent):
     hours: float = 0.0
     log_date: date = date.min
     description: str = ""
+    billable: bool = True
+    hourly_rate: float | None = None
 
 
 @dataclass(frozen=True)
@@ -28,4 +30,9 @@ class TimerStarted(DomainEvent):
 class TimerStopped(DomainEvent):
     time_log_id: uuid.UUID = uuid.UUID(int=0)
     user_id: uuid.UUID = uuid.UUID(int=0)
+    project_id: uuid.UUID = uuid.UUID(int=0)
     hours: float = 0.0
+    log_date: date = date.min
+    description: str = ""
+    billable: bool = True
+    hourly_rate: float | None = None

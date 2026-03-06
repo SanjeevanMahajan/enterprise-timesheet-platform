@@ -33,6 +33,19 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  billing-service:
+    build: services/billing-service
+    ports:
+      - "8001:8001"
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - billing-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     ports:
@@ -62,3 +75,4 @@ services:
 
 volumes:
   pgdata:
+  billing-data:

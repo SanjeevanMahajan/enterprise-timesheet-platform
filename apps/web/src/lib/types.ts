@@ -111,6 +111,45 @@ export interface CreateProjectRequest {
   default_hourly_rate?: number | null;
 }
 
+// -- Billing (from billing-service) -------------------------------------------
+
+export interface BillingStats {
+  total_invoiced: number;
+  invoice_count: number;
+  awaiting_review_count: number;
+  awaiting_review_amount: number;
+  ready_to_bill_count: number;
+  ready_to_bill_amount: number;
+}
+
+export interface BillingInvoice {
+  id: string;
+  tenant_id: string;
+  total: number;
+  line_item_count: number;
+  status: string;
+  created_at: string;
+}
+
+export interface BillingLineItem {
+  id: string;
+  time_log_id: string;
+  tenant_id: string;
+  user_id: string;
+  project_id: string;
+  hours: number;
+  hourly_rate: number | null;
+  total: number;
+  description: string;
+  log_date: string;
+  category: string | null;
+  quality_score: number | null;
+  billable: number;
+  status: string;
+  invoice_id: string | null;
+  created_at: string;
+}
+
 // -- User Profile (client-side) -----------------------------------------------
 
 export interface UserProfile {

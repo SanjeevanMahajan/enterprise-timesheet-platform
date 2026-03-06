@@ -100,6 +100,19 @@ def handle_ai_insight(data: dict) -> None:
     )
 
 
+def handle_invoice_generated(data: dict) -> None:
+    invoice_id = data.get("invoice_id", "unknown")
+    total = data.get("total", 0)
+    count = data.get("line_item_count", 0)
+    log.info(
+        "[NOTIFIER] Invoice %s generated — %d line items, total $%.2f. "
+        "Sending invoice email to client...",
+        invoice_id,
+        count,
+        total,
+    )
+
+
 HANDLERS: dict[str, callable] = {
     "UserRegistered": handle_user_registered,
     "TimeLogCreated": handle_time_log_created,
@@ -110,6 +123,7 @@ HANDLERS: dict[str, callable] = {
     "TimesheetApproved": handle_timesheet_approved,
     "TimesheetRejected": handle_timesheet_rejected,
     "AIInsightGenerated": handle_ai_insight,
+    "InvoiceGenerated": handle_invoice_generated,
 }
 
 

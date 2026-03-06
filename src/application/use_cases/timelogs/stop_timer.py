@@ -33,7 +33,12 @@ class StopTimerUseCase:
                 tenant_id=tenant_id,
                 time_log_id=time_log.id,
                 user_id=time_log.user_id,
+                project_id=time_log.project_id,
                 hours=time_log.hours,
+                log_date=time_log.log_date,
+                description=time_log.description,
+                billable=time_log.billable,
+                hourly_rate=time_log.hourly_rate,
             )
         )
 

@@ -61,6 +61,8 @@ class CreateTimeLogUseCase:
                 hours=request.hours,
                 log_date=request.log_date,
                 description=request.description,
+                billable=time_log.billable,
+                hourly_rate=time_log.hourly_rate,
             )
         )
 
