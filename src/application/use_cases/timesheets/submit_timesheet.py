@@ -8,6 +8,7 @@ from src.application.interfaces.unit_of_work import UnitOfWork
 from src.domain.entities.timesheet import Timesheet
 from src.domain.events.timesheet_events import TimesheetSubmitted
 from src.domain.exceptions import BusinessRuleViolationError
+from src.domain.value_objects.enums import TimesheetStatus
 
 
 class SubmitTimesheetUseCase:
@@ -42,6 +43,8 @@ class SubmitTimesheetUseCase:
 
             if existing is not None:
                 existing.total_hours = total_hours
+                if existing.status == TimesheetStatus.REJECTED:
+                    existing.reopen()
                 existing.submit()
                 timesheet = await self._uow.timesheets.update(existing)
             else:
