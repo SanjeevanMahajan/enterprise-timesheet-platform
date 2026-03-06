@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 
 from src.domain.repositories import (
+    ClientRepository,
     ProjectRepository,
     TaskRepository,
     TimeLogRepository,
@@ -28,6 +29,7 @@ class UnitOfWork(ABC):
     tasks: TaskRepository
     time_logs: TimeLogRepository
     timesheets: TimesheetRepository
+    clients: ClientRepository
 
     @abstractmethod
     async def commit(self) -> None: ...

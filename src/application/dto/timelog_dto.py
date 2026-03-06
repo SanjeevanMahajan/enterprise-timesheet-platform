@@ -13,12 +13,23 @@ class CreateTimeLogRequest(BaseModel):
     task_id: uuid.UUID | None = None
     description: str = ""
     billable: bool = True
+    hourly_rate: float | None = None
 
 
 class UpdateTimeLogRequest(BaseModel):
     hours: float | None = Field(default=None, gt=0, le=24)
     description: str | None = None
     billable: bool | None = None
+    hourly_rate: float | None = None
+
+
+class StartTimerRequest(BaseModel):
+    project_id: uuid.UUID
+    log_date: date
+    task_id: uuid.UUID | None = None
+    description: str = ""
+    billable: bool = True
+    hourly_rate: float | None = None
 
 
 class TimeLogResponse(BaseModel):
@@ -31,6 +42,11 @@ class TimeLogResponse(BaseModel):
     log_date: date
     description: str
     billable: bool
+    hourly_rate: float | None
+    billable_amount: float
+    timer_started_at: datetime | None
+    timer_stopped_at: datetime | None
+    is_timer_running: bool
     created_at: datetime
     updated_at: datetime
 

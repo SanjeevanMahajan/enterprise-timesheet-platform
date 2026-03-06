@@ -8,6 +8,7 @@ from src.application.use_cases.projects.delete_project import DeleteProjectUseCa
 from src.application.use_cases.projects.get_project import GetProjectUseCase
 from src.application.use_cases.projects.list_projects import ListProjectsUseCase
 from src.application.use_cases.projects.update_project import UpdateProjectUseCase
+from src.domain.entities.client import Client
 from src.domain.entities.project import Project
 from src.domain.events.project_events import ProjectCreated, ProjectStatusChanged
 from src.domain.exceptions import EntityNotFoundError, InvalidStateTransitionError
@@ -45,6 +46,38 @@ class TestCreateProject:
         assert event.project_id == result.id
         assert event.name == "MVP"
         assert event.tenant_id == TENANT_ID
+
+    @pytest.mark.asyncio
+    async def test_creates_with_client(self, use_case, uow):
+        client = Client(tenant_id=TENANT_ID, name="Acme")
+        await uow.clients.add(client)
+
+        req = CreateProjectRequest(name="P", client_id=client.id)
+        result = await use_case.execute(TENANT_ID, USER_ID, req)
+        assert result.client_id == client.id
+
+    @pytest.mark.asyncio
+    async def test_rejects_nonexistent_client(self, use_case):
+        req = CreateProjectRequest(name="P", client_id=uuid.uuid4())
+        with pytest.raises(EntityNotFoundError):
+            await use_case.execute(TENANT_ID, USER_ID, req)
+
+    @pytest.mark.asyncio
+    async def test_creates_with_billing(self, use_case):
+        req = CreateProjectRequest(
+            name="Billable", is_billable=True, default_hourly_rate=150.0,
+        )
+        result = await use_case.execute(TENANT_ID, USER_ID, req)
+        assert result.is_billable is True
+        assert result.default_hourly_rate == 150.0
+
+    @pytest.mark.asyncio
+    async def test_billing_defaults(self, use_case):
+        req = CreateProjectRequest(name="Default")
+        result = await use_case.execute(TENANT_ID, USER_ID, req)
+        assert result.is_billable is True
+        assert result.default_hourly_rate is None
+        assert result.client_id is None
 
 
 class TestGetProject:
@@ -125,6 +158,24 @@ class TestUpdateProject:
         req = UpdateProjectRequest(name="Renamed")
         await use_case.execute(TENANT_ID, p.id, req)
         assert len(events.events) == 0
+
+    @pytest.mark.asyncio
+    async def test_updates_billing_fields(self, use_case, uow):
+        p = await self._seed(uow)
+        req = UpdateProjectRequest(is_billable=False, default_hourly_rate=200.0)
+        result = await use_case.execute(TENANT_ID, p.id, req)
+        assert result.is_billable is False
+        assert result.default_hourly_rate == 200.0
+
+    @pytest.mark.asyncio
+    async def test_updates_client_id(self, use_case, uow):
+        p = await self._seed(uow)
+        client = Client(tenant_id=TENANT_ID, name="Acme")
+        await uow.clients.add(client)
+
+        req = UpdateProjectRequest(client_id=client.id)
+        result = await use_case.execute(TENANT_ID, p.id, req)
+        assert result.client_id == client.id
 
 
 class TestListProjects:

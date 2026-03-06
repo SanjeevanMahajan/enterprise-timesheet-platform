@@ -1,3 +1,8 @@
+from src.application.dto.client_dto import (
+    ClientResponse,
+    CreateClientRequest,
+    UpdateClientRequest,
+)
 from src.application.dto.project_dto import (
     CreateProjectRequest,
     ProjectResponse,
@@ -11,6 +16,7 @@ from src.application.dto.task_dto import (
 )
 from src.application.dto.timelog_dto import (
     CreateTimeLogRequest,
+    StartTimerRequest,
     TimeLogResponse,
     UpdateTimeLogRequest,
 )
@@ -30,6 +36,8 @@ from src.application.dto.user_dto import (
 __all__ = [
     "AssignTaskRequest",
     "AuthRequest",
+    "ClientResponse",
+    "CreateClientRequest",
     "CreateProjectRequest",
     "CreateTaskRequest",
     "CreateTimeLogRequest",
@@ -37,10 +45,12 @@ __all__ = [
     "CreateUserRequest",
     "ProjectResponse",
     "RejectTimesheetRequest",
+    "StartTimerRequest",
     "TaskResponse",
     "TimeLogResponse",
     "TimesheetResponse",
     "TokenResponse",
+    "UpdateClientRequest",
     "UpdateProjectRequest",
     "UpdateTaskRequest",
     "UpdateTimeLogRequest",

@@ -10,11 +10,13 @@ import uuid
 from datetime import date
 
 from src.domain.entities.base import Entity
+from src.domain.entities.client import Client
 from src.domain.entities.project import Project
 from src.domain.entities.task import Task
 from src.domain.entities.time_log import TimeLog
 from src.domain.entities.timesheet import Timesheet
 from src.domain.entities.user import User
+from src.domain.repositories.client_repository import ClientRepository
 from src.domain.repositories.project_repository import ProjectRepository
 from src.domain.repositories.task_repository import TaskRepository
 from src.domain.repositories.time_log_repository import TimeLogRepository
@@ -191,5 +193,23 @@ class FakeTimesheetRepository(InMemoryRepository, TimesheetRepository):
             if isinstance(ts, Timesheet)
             and ts.tenant_id == tenant_id
             and ts.status == TimesheetStatus.SUBMITTED
+        ]
+        return items[offset : offset + limit]
+
+
+class FakeClientRepository(InMemoryRepository, ClientRepository):
+    async def list_by_name(
+        self,
+        tenant_id: uuid.UUID,
+        name_contains: str,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[Client]:
+        items = [
+            c for c in self._store.values()
+            if isinstance(c, Client)
+            and c.tenant_id == tenant_id
+            and name_contains.lower() in c.name.lower()
         ]
         return items[offset : offset + limit]

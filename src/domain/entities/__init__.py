@@ -1,5 +1,6 @@
 from src.domain.entities.audit_log import AuditLog
 from src.domain.entities.base import Entity
+from src.domain.entities.client import Client
 from src.domain.entities.issue import Issue
 from src.domain.entities.notification import Notification
 from src.domain.entities.organization import Organization
@@ -12,6 +13,7 @@ from src.domain.entities.user import User
 
 __all__ = [
     "AuditLog",
+    "Client",
     "Entity",
     "Issue",
     "Notification",

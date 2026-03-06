@@ -57,6 +57,11 @@ class ListTimeLogsUseCase:
                 log_date=tl.log_date,
                 description=tl.description,
                 billable=tl.billable,
+                hourly_rate=tl.hourly_rate,
+                billable_amount=tl.billable_amount,
+                timer_started_at=tl.timer_started_at,
+                timer_stopped_at=tl.timer_stopped_at,
+                is_timer_running=tl.is_timer_running,
                 created_at=tl.created_at,
                 updated_at=tl.updated_at,
             )

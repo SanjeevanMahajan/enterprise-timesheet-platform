@@ -13,6 +13,9 @@ class CreateProjectRequest(BaseModel):
     description: str = ""
     start_date: date | None = None
     end_date: date | None = None
+    client_id: uuid.UUID | None = None
+    is_billable: bool = True
+    default_hourly_rate: float | None = None
 
 
 class UpdateProjectRequest(BaseModel):
@@ -21,6 +24,9 @@ class UpdateProjectRequest(BaseModel):
     status: ProjectStatus | None = None
     start_date: date | None = None
     end_date: date | None = None
+    client_id: uuid.UUID | None = None
+    is_billable: bool | None = None
+    default_hourly_rate: float | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -32,6 +38,9 @@ class ProjectResponse(BaseModel):
     description: str
     start_date: date | None
     end_date: date | None
+    client_id: uuid.UUID | None
+    is_billable: bool
+    default_hourly_rate: float | None
     created_at: datetime
     updated_at: datetime
 

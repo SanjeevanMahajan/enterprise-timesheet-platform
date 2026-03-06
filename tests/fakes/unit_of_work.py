@@ -4,6 +4,7 @@ from types import TracebackType
 
 from src.application.interfaces.unit_of_work import UnitOfWork
 from tests.fakes.repositories import (
+    FakeClientRepository,
     FakeProjectRepository,
     FakeTaskRepository,
     FakeTimeLogRepository,
@@ -21,6 +22,7 @@ class FakeUnitOfWork(UnitOfWork):
         self.tasks = FakeTaskRepository()
         self.time_logs = FakeTimeLogRepository()
         self.timesheets = FakeTimesheetRepository()
+        self.clients = FakeClientRepository()
         self.committed = False
         self.rolled_back = False
 

@@ -32,6 +32,9 @@ class ListProjectsUseCase:
                 description=p.description,
                 start_date=p.start_date,
                 end_date=p.end_date,
+                client_id=p.client_id,
+                is_billable=p.is_billable,
+                default_hourly_rate=p.default_hourly_rate,
                 created_at=p.created_at,
                 updated_at=p.updated_at,
             )

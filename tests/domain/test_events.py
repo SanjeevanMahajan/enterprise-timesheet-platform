@@ -2,9 +2,10 @@ import uuid
 from datetime import date
 
 from src.domain.events.base import DomainEvent
+from src.domain.events.client_events import ClientCreated
 from src.domain.events.project_events import ProjectCreated, ProjectStatusChanged
 from src.domain.events.task_events import TaskAssigned, TaskStatusChanged
-from src.domain.events.timelog_events import TimeLogCreated
+from src.domain.events.timelog_events import TimeLogCreated, TimerStarted, TimerStopped
 from src.domain.events.timesheet_events import (
     TimesheetApproved,
     TimesheetRejected,
@@ -70,6 +71,20 @@ class TestTimeLogEvents:
         )
         assert e.hours == 8.0
 
+    def test_timer_started(self):
+        e = TimerStarted(
+            tenant_id=TENANT, time_log_id=uuid.uuid4(),
+            user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+        )
+        assert e.time_log_id is not None
+
+    def test_timer_stopped(self):
+        e = TimerStopped(
+            tenant_id=TENANT, time_log_id=uuid.uuid4(),
+            user_id=uuid.uuid4(), hours=2.5,
+        )
+        assert e.hours == 2.5
+
 
 class TestTimesheetEvents:
     def test_timesheet_submitted(self):
@@ -92,3 +107,11 @@ class TestTimesheetEvents:
             user_id=uuid.uuid4(), rejected_by=uuid.uuid4(), reason="Bad",
         )
         assert e.reason == "Bad"
+
+
+class TestClientEvents:
+    def test_client_created(self):
+        cid = uuid.uuid4()
+        e = ClientCreated(tenant_id=TENANT, client_id=cid, name="Acme")
+        assert e.client_id == cid
+        assert e.name == "Acme"

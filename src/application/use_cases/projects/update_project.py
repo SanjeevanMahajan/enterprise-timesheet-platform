@@ -35,6 +35,12 @@ class UpdateProjectUseCase:
                 project.start_date = request.start_date
             if request.end_date is not None:
                 project.end_date = request.end_date
+            if request.client_id is not None:
+                project.client_id = request.client_id
+            if request.is_billable is not None:
+                project.is_billable = request.is_billable
+            if request.default_hourly_rate is not None:
+                project.default_hourly_rate = request.default_hourly_rate
             if request.status is not None and request.status != old_status:
                 project.transition_to(request.status)
 
@@ -61,6 +67,9 @@ class UpdateProjectUseCase:
             description=project.description,
             start_date=project.start_date,
             end_date=project.end_date,
+            client_id=project.client_id,
+            is_billable=project.is_billable,
+            default_hourly_rate=project.default_hourly_rate,
             created_at=project.created_at,
             updated_at=project.updated_at,
         )

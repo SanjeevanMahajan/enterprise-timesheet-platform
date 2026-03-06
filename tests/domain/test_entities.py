@@ -1,9 +1,10 @@
 import uuid
-from datetime import date
+from datetime import date, datetime, timedelta
 
 import pytest
 
 from src.domain.entities.base import Entity
+from src.domain.entities.client import Client
 from src.domain.entities.issue import Issue
 from src.domain.entities.notification import Notification
 from src.domain.entities.organization import Organization
@@ -156,6 +157,28 @@ class TestProject:
         p.transition_to(ProjectStatus.ON_HOLD)
         assert p.updated_at >= old
 
+    def test_client_id_defaults_to_none(self):
+        p = Project(tenant_id=TENANT, name="P", owner_id=uuid.uuid4())
+        assert p.client_id is None
+
+    def test_create_with_client(self):
+        cid = uuid.uuid4()
+        p = Project(tenant_id=TENANT, name="P", owner_id=uuid.uuid4(), client_id=cid)
+        assert p.client_id == cid
+
+    def test_billing_defaults(self):
+        p = Project(tenant_id=TENANT, name="P", owner_id=uuid.uuid4())
+        assert p.is_billable is True
+        assert p.default_hourly_rate is None
+
+    def test_create_with_billing(self):
+        p = Project(
+            tenant_id=TENANT, name="P", owner_id=uuid.uuid4(),
+            is_billable=True, default_hourly_rate=150.0,
+        )
+        assert p.default_hourly_rate == 150.0
+        assert p.is_billable is True
+
 
 # ── Task ─────────────────────────────────────────────────────────────────────
 
@@ -257,6 +280,167 @@ class TestTimeLog:
         )
         with pytest.raises(BusinessRuleViolationError):
             tl.update_hours(0)
+
+
+class TestTimeLogTimer:
+    """Tests for live timer start/stop functionality."""
+
+    def test_start_timer(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=0.0, log_date=date(2026, 3, 1),
+            timer_started_at=datetime.utcnow(),
+        )
+        assert tl.is_timer_running is True
+        assert tl.timer_started_at is not None
+        assert tl.timer_stopped_at is None
+
+    def test_start_timer_method(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=0.0, log_date=date(2026, 3, 1),
+            timer_started_at=datetime.utcnow(),
+        )
+        # Can't start again — already started
+        with pytest.raises(BusinessRuleViolationError, match="already been started"):
+            tl.start_timer()
+
+    def test_start_timer_fresh(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=8.0, log_date=date(2026, 3, 1),
+        )
+        tl.start_timer()
+        assert tl.is_timer_running is True
+
+    def test_stop_timer_calculates_hours(self):
+        started = datetime.utcnow() - timedelta(hours=2, minutes=30)
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=0.0, log_date=date(2026, 3, 1),
+            timer_started_at=started,
+        )
+        tl.stop_timer()
+        assert tl.is_timer_running is False
+        assert tl.timer_stopped_at is not None
+        # ~2.5 hours elapsed — allow small delta for test execution time
+        assert 2.49 <= tl.hours <= 2.52
+
+    def test_stop_timer_without_start_raises(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=1.0, log_date=date(2026, 3, 1),
+        )
+        with pytest.raises(BusinessRuleViolationError, match="not been started"):
+            tl.stop_timer()
+
+    def test_stop_timer_twice_raises(self):
+        started = datetime.utcnow() - timedelta(hours=1)
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=0.0, log_date=date(2026, 3, 1),
+            timer_started_at=started,
+        )
+        tl.stop_timer()
+        with pytest.raises(BusinessRuleViolationError, match="already been stopped"):
+            tl.stop_timer()
+
+    def test_timer_based_allows_zero_hours(self):
+        """Timer-based entries can have hours=0 while the timer is running."""
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=0.0, log_date=date(2026, 3, 1),
+            timer_started_at=datetime.utcnow(),
+        )
+        assert tl.hours == 0.0
+
+    def test_manual_entry_rejects_zero_hours(self):
+        """Non-timer entries still require hours > 0."""
+        with pytest.raises(BusinessRuleViolationError):
+            TimeLog(
+                tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+                hours=0.0, log_date=date(2026, 3, 1),
+            )
+
+
+class TestTimeLogBilling:
+    """Tests for billing fields and billable_amount computation."""
+
+    def test_hourly_rate_default_none(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=8.0, log_date=date(2026, 3, 1),
+        )
+        assert tl.hourly_rate is None
+
+    def test_hourly_rate_set_on_creation(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=8.0, log_date=date(2026, 3, 1), hourly_rate=150.0,
+        )
+        assert tl.hourly_rate == 150.0
+
+    def test_billable_amount_calculated(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=8.0, log_date=date(2026, 3, 1),
+            billable=True, hourly_rate=100.0,
+        )
+        assert tl.billable_amount == 800.0
+
+    def test_billable_amount_zero_when_not_billable(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=8.0, log_date=date(2026, 3, 1),
+            billable=False, hourly_rate=100.0,
+        )
+        assert tl.billable_amount == 0.0
+
+    def test_billable_amount_zero_when_no_rate(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=8.0, log_date=date(2026, 3, 1),
+            billable=True,
+        )
+        assert tl.billable_amount == 0.0
+
+    def test_billable_amount_rounds_to_two_decimals(self):
+        tl = TimeLog(
+            tenant_id=TENANT, user_id=uuid.uuid4(), project_id=uuid.uuid4(),
+            hours=1.5, log_date=date(2026, 3, 1),
+            billable=True, hourly_rate=33.33,
+        )
+        assert tl.billable_amount == 49.99  # 1.5 * 33.33 = 49.995 → round(_, 2) = 49.99
+
+
+# ── Client ───────────────────────────────────────────────────────────────────
+
+class TestClient:
+    def test_create_defaults(self):
+        c = Client(tenant_id=TENANT, name="Acme Corp")
+        assert c.name == "Acme Corp"
+        assert c.contact_email == ""
+        assert c.contact_name == ""
+        assert c.is_active is True
+
+    def test_create_with_contact_info(self):
+        c = Client(
+            tenant_id=TENANT, name="Acme Corp",
+            contact_email="billing@acme.com",
+            contact_name="Jane Doe",
+        )
+        assert c.contact_email == "billing@acme.com"
+        assert c.contact_name == "Jane Doe"
+
+    def test_deactivate(self):
+        c = Client(tenant_id=TENANT, name="Acme Corp")
+        c.deactivate()
+        assert c.is_active is False
+
+    def test_has_id_and_tenant(self):
+        c = Client(tenant_id=TENANT, name="Acme Corp")
+        assert c.id is not None
+        assert c.tenant_id == TENANT
 
 
 # ── Timesheet ────────────────────────────────────────────────────────────────

@@ -26,6 +26,9 @@ class Project(Entity):
         description: str = "",
         start_date: date | None = None,
         end_date: date | None = None,
+        client_id: uuid.UUID | None = None,
+        is_billable: bool = True,
+        default_hourly_rate: float | None = None,
         id: uuid.UUID | None = None,
         **kwargs,
     ) -> None:
@@ -36,6 +39,9 @@ class Project(Entity):
         self.description = description
         self.start_date = start_date
         self.end_date = end_date
+        self.client_id = client_id
+        self.is_billable = is_billable
+        self.default_hourly_rate = default_hourly_rate
 
     def transition_to(self, new_status: ProjectStatus) -> None:
         allowed = _VALID_TRANSITIONS.get(self.status, set())

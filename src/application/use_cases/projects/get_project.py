@@ -30,6 +30,9 @@ class GetProjectUseCase:
             description=project.description,
             start_date=project.start_date,
             end_date=project.end_date,
+            client_id=project.client_id,
+            is_billable=project.is_billable,
+            default_hourly_rate=project.default_hourly_rate,
             created_at=project.created_at,
             updated_at=project.updated_at,
         )
