@@ -20,6 +20,8 @@ from src.application.use_cases.tasks.list_tasks import ListTasksUseCase
 from src.application.use_cases.tasks.update_task import UpdateTaskUseCase
 from src.application.use_cases.timelogs.create_time_log import CreateTimeLogUseCase
 from src.application.use_cases.timelogs.list_time_logs import ListTimeLogsUseCase
+from src.application.use_cases.timelogs.start_timer import StartTimerUseCase
+from src.application.use_cases.timelogs.stop_timer import StopTimerUseCase
 from src.application.use_cases.timelogs.update_time_log import UpdateTimeLogUseCase
 from src.application.use_cases.timesheets.approve_timesheet import ApproveTimesheetUseCase
 from src.application.use_cases.timesheets.get_timesheet import GetTimesheetUseCase
@@ -122,6 +124,14 @@ def get_update_time_log_use_case() -> UpdateTimeLogUseCase:
 
 def get_list_time_logs_use_case() -> ListTimeLogsUseCase:
     return ListTimeLogsUseCase(_uow())
+
+
+def get_start_timer_use_case() -> StartTimerUseCase:
+    return StartTimerUseCase(_uow(), _event_publisher)
+
+
+def get_stop_timer_use_case() -> StopTimerUseCase:
+    return StopTimerUseCase(_uow(), _event_publisher)
 
 
 # -- Timesheet use cases -------------------------------------------------------
