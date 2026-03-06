@@ -1,0 +1,32 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://timesheet:timesheet@db:5432/timesheet"
+      JWT_SECRET_KEY: "local-dev-secret-change-in-prod"
+      DEBUG: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: timesheet
+      POSTGRES_PASSWORD: timesheet
+      POSTGRES_DB: timesheet
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timesheet"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:

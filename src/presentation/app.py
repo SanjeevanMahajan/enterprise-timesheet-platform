@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.infrastructure.config.settings import settings
+from src.infrastructure.database.models import Base  # noqa: F401 — registers all models
 from src.infrastructure.database.session import engine
 from src.presentation.api.v1.auth_router import router as auth_router
 from src.presentation.api.v1.project_router import router as project_router
@@ -18,7 +19,9 @@ from src.presentation.exception_handlers import register_exception_handlers
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    # Startup: nothing extra needed — engine is lazy-initialized
+    # Startup: create tables (dev convenience — use Alembic in production)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
     # Shutdown: dispose the connection pool
     await engine.dispose()

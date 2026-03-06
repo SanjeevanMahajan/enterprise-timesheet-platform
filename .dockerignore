@@ -1,0 +1,15 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+.env
+.env.local
+.DS_Store
+.vscode
+.claude
+architecture/
+docs/
+infra/
+scripts/
+tests/
+*.md
