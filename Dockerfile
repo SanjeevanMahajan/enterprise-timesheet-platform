@@ -5,7 +5,9 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir --upgrade pip
 
+# Copy source so hatchling can build the package
 COPY pyproject.toml ./
+COPY src/ ./src/
 RUN pip install --no-cache-dir .
 
 # ---- Runtime stage: lean production image ----
