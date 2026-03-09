@@ -12,26 +12,28 @@ import {
 import type { BillingStats, BillingInvoice, BillingLineItem } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
-// Status badge
+// Status badge — uses design system badge class
 // ---------------------------------------------------------------------------
 
 const INVOICE_STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  draft: { bg: "bg-background", text: "text-muted", label: "Draft" },
-  unpaid: { bg: "bg-warning-light", text: "text-warning", label: "Unpaid" },
-  paid: { bg: "bg-success-light", text: "text-success", label: "Paid" },
+  draft: { bg: "bg-[#6b6b76]/10", text: "text-[#6b6b76]", label: "Draft" },
+  sent: { bg: "bg-[#0284c7]/10", text: "text-[#0284c7]", label: "Sent" },
+  unpaid: { bg: "bg-[#0284c7]/10", text: "text-[#0284c7]", label: "Unpaid" },
+  paid: { bg: "bg-[#059669]/10", text: "text-[#059669]", label: "Paid" },
+  overdue: { bg: "bg-[#dc2626]/10", text: "text-[#dc2626]", label: "Overdue" },
 };
 
 function InvoiceStatusBadge({ status }: { status: string }) {
-  const s = INVOICE_STATUS_STYLES[status] ?? { bg: "bg-background", text: "text-muted", label: status };
+  const s = INVOICE_STATUS_STYLES[status] ?? { bg: "bg-[#6b6b76]/10", text: "text-[#6b6b76]", label: status };
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${s.bg} ${s.text}`}>
+    <span className={`badge ${s.bg} ${s.text}`}>
       {s.label}
     </span>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Toast
+// Toast system
 // ---------------------------------------------------------------------------
 
 interface Toast {
@@ -48,10 +50,10 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`animate-fade-in-up flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur-sm ${
+          className={`animate-fade-in-up flex items-center gap-3 rounded-lg border px-4 py-3 shadow-[var(--shadow-lg)] backdrop-blur-sm ${
             t.type === "success"
-              ? "border-success/20 bg-success-light text-success"
-              : "border-danger/20 bg-danger-light text-danger"
+              ? "border-[#059669]/20 bg-success-light text-[#059669]"
+              : "border-[#dc2626]/20 bg-danger-light text-[#dc2626]"
           }`}
         >
           {t.type === "success" ? (
@@ -64,7 +66,7 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
             </svg>
           )}
           <span className="text-[13px] font-medium">{t.message}</span>
-          <button onClick={() => onDismiss(t.id)} className="ml-2 shrink-0 opacity-60 hover:opacity-100">
+          <button onClick={() => onDismiss(t.id)} className="ml-2 shrink-0 opacity-60 hover:opacity-100 transition-opacity">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -194,6 +196,10 @@ export default function BillingPage() {
       year: "numeric",
     });
 
+  // Check if an invoice is payable (unpaid or draft with a payment link)
+  const isPayable = (inv: BillingInvoice) =>
+    inv.status !== "paid" && inv.payment_url;
+
   // ---------------------------------------------------------------------------
   // Stats cards config
   // ---------------------------------------------------------------------------
@@ -201,11 +207,11 @@ export default function BillingPage() {
   const STAT_CARDS = [
     {
       label: "Total Invoiced",
-      value: stats ? formatCurrency(stats.total_invoiced) : "—",
+      value: stats ? formatCurrency(stats.total_invoiced) : "\u2014",
       sub: stats ? `${stats.invoice_count} invoice${stats.invoice_count !== 1 ? "s" : ""}` : "",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
         </svg>
       ),
       accent: "text-primary",
@@ -213,7 +219,7 @@ export default function BillingPage() {
     },
     {
       label: "Revenue Collected",
-      value: stats ? formatCurrency(stats.total_paid) : "—",
+      value: stats ? formatCurrency(stats.total_paid) : "\u2014",
       sub: stats ? `${stats.paid_count} paid` : "",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -224,12 +230,12 @@ export default function BillingPage() {
       accentBg: "bg-success-light",
     },
     {
-      label: "Awaiting Approval",
-      value: stats ? String(stats.awaiting_review_count) : "—",
-      sub: stats ? formatCurrency(stats.awaiting_review_amount) : "",
+      label: "Awaiting Payment",
+      value: stats ? formatCurrency(stats.awaiting_review_amount) : "\u2014",
+      sub: stats ? `${stats.awaiting_review_count} pending` : "",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
       ),
       accent: "text-warning",
@@ -237,80 +243,72 @@ export default function BillingPage() {
     },
   ];
 
-  // Check if an invoice is payable (unpaid or draft with a payment link)
-  const isPayable = (inv: BillingInvoice) =>
-    inv.status !== "paid" && inv.payment_url;
-
   return (
     <>
       {/* Page header */}
-      <div className="mb-8 flex items-end justify-between">
-        <div>
-          <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Billing</h1>
-          <p className="mt-0.5 text-[13px] text-muted">
-            Invoices, Stripe payments, and AI-flagged entry review.
-          </p>
-        </div>
-        <button
-          onClick={fetchAll}
-          disabled={loading}
-          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-card-hover disabled:opacity-50"
-        >
-          <svg className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
-          </svg>
-          Refresh
-        </button>
+      <div className="mb-8 animate-fade-in-up">
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Billing</h1>
+        <p className="mt-0.5 text-[13px] text-muted">
+          Invoices, payments, and AI-flagged entry review.
+        </p>
       </div>
 
-      {/* Stats row */}
-      <div className="mb-6 grid grid-cols-3 gap-4">
+      {/* Stat cards */}
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {STAT_CARDS.map((card, i) => (
           <div
             key={card.label}
-            className="animate-fade-in-up rounded-2xl border border-border bg-card p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
+            className="animate-fade-in-up rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)] transition-shadow hover:shadow-[var(--shadow-sm)]"
             style={{ animationDelay: `${i * 80}ms` }}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
                 {card.label}
               </span>
               <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.accentBg} ${card.accent}`}>
                 {card.icon}
               </div>
             </div>
-            <p className="mt-3 text-2xl font-bold tracking-tight tabular-nums">
-              {loading ? "—" : card.value}
+            <p className="stat-value mt-3">
+              {loading ? "\u2014" : card.value}
             </p>
             {card.sub && !loading && (
-              <p className="mt-0.5 text-[11px] text-muted tabular-nums">{card.sub}</p>
+              <p className="mt-1 text-[12px] text-muted tabular-nums">{card.sub}</p>
             )}
           </div>
         ))}
       </div>
 
-      {/* Invoices table */}
+      {/* Invoices section */}
       <div
-        className="animate-fade-in-up mb-6 rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden"
+        className="animate-fade-in-up mb-6 rounded-xl border border-border bg-card shadow-[var(--shadow-xs)] overflow-hidden"
         style={{ animationDelay: "240ms" }}
       >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div className="flex items-center gap-2">
+        {/* Card header */}
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
             <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
             </svg>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            <h3 className="text-[13px] font-semibold text-foreground">
               Invoices
             </h3>
           </div>
-          <span className="rounded-full bg-background px-2.5 py-0.5 text-[11px] font-semibold text-muted tabular-nums">
-            {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"}
-          </span>
+          <button
+            onClick={fetchAll}
+            disabled={loading}
+            className="btn btn-ghost !py-1.5 !px-3 !text-[12px]"
+          >
+            <svg className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+            </svg>
+            Refresh
+          </button>
         </div>
 
         {loading ? (
-          <div className="px-6 py-16 text-center">
-            <div className="inline-flex items-center gap-2 text-[13px] text-muted">
+          <div className="flex items-center justify-center py-20">
+            <div className="flex items-center gap-2.5 text-[13px] text-muted">
               <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -319,14 +317,12 @@ export default function BillingPage() {
             </div>
           </div>
         ) : invoices.length === 0 ? (
-          <div className="px-6 py-16 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-background">
-              <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-              </svg>
-            </div>
-            <p className="mt-3 text-[13px] font-medium text-foreground">No invoices yet</p>
-            <p className="mt-1 text-xs text-muted">
+          <div className="empty-state">
+            <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+            </svg>
+            <h3>No invoices yet</h3>
+            <p>
               Invoices are generated automatically when 3+ billable entries are ready.
             </p>
           </div>
@@ -334,57 +330,42 @@ export default function BillingPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-border bg-background/50">
-                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-                    Invoice ID
-                  </th>
-                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-                    Date
-                  </th>
-                  <th className="px-6 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-                    Items
-                  </th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-                    Amount
-                  </th>
-                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-                    Status
-                  </th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-                    Action
-                  </th>
+                <tr>
+                  <th className="table-header text-left">Invoice #</th>
+                  <th className="table-header text-left">Date</th>
+                  <th className="table-header text-center">Items</th>
+                  <th className="table-header text-right">Amount</th>
+                  <th className="table-header text-left">Status</th>
+                  <th className="table-header text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((inv) => (
-                  <tr
-                    key={inv.id}
-                    className="border-b border-border-subtle last:border-0 transition-colors hover:bg-card-hover"
-                  >
-                    <td className="px-6 py-3.5">
+                  <tr key={inv.id}>
+                    <td className="table-cell">
                       <span className="font-mono text-[12px] text-muted">
                         {inv.id.slice(0, 8)}...
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 whitespace-nowrap text-[13px] text-muted">
+                    <td className="table-cell whitespace-nowrap text-muted">
                       {formatDate(inv.created_at)}
                     </td>
-                    <td className="px-6 py-3.5 text-center">
-                      <span className="rounded-full bg-background px-2 py-0.5 text-[11px] font-semibold text-muted tabular-nums">
+                    <td className="table-cell text-center">
+                      <span className="badge bg-surface-inset text-muted">
                         {inv.line_item_count}
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 text-right">
+                    <td className="table-cell text-right">
                       <span className={`text-[14px] font-semibold tabular-nums ${inv.status === "paid" ? "text-success" : "text-foreground"}`}>
                         {formatCurrency(inv.total)}
                       </span>
                     </td>
-                    <td className="px-6 py-3.5">
+                    <td className="table-cell">
                       <InvoiceStatusBadge status={inv.status} />
                     </td>
-                    <td className="px-6 py-3.5 text-right">
+                    <td className="table-cell text-right">
                       {inv.status === "paid" ? (
-                        <span className="text-[11px] text-muted">
+                        <span className="text-[12px] text-muted">
                           {inv.paid_at ? formatDate(inv.paid_at) : "Paid"}
                         </span>
                       ) : isPayable(inv) ? (
@@ -399,7 +380,7 @@ export default function BillingPage() {
                           <button
                             onClick={() => handleSimulatePayment(inv)}
                             disabled={paying === inv.id}
-                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-muted transition-colors hover:bg-card-hover hover:text-foreground disabled:opacity-50"
+                            className="btn btn-secondary !py-1 !px-2.5 !text-[11px]"
                             title="Simulate payment (dev mode)"
                           >
                             {paying === inv.id ? (
@@ -416,7 +397,7 @@ export default function BillingPage() {
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[11px] text-muted-foreground">—</span>
+                        <span className="text-[12px] text-muted-foreground">&mdash;</span>
                       )}
                     </td>
                   </tr>
@@ -427,28 +408,31 @@ export default function BillingPage() {
         )}
       </div>
 
-      {/* Review Center — flagged entries */}
+      {/* Quality Review — flagged entries */}
       <div
-        className="animate-fade-in-up rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden"
+        className="animate-fade-in-up rounded-xl border border-border bg-card shadow-[var(--shadow-xs)] overflow-hidden"
         style={{ animationDelay: "320ms" }}
       >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div className="flex items-center gap-2">
+        {/* Card header */}
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
             <svg className="h-4 w-4 text-warning" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-              Flagged for Review
+            <h3 className="text-[13px] font-semibold text-foreground">
+              Quality Review
             </h3>
           </div>
-          <span className="rounded-full bg-warning-light px-2.5 py-0.5 text-[11px] font-semibold text-warning tabular-nums">
-            {flagged.length} {flagged.length === 1 ? "entry" : "entries"}
-          </span>
+          {flagged.length > 0 && !loading && (
+            <span className="badge bg-[#d97706]/10 text-[#d97706]">
+              {flagged.length} {flagged.length === 1 ? "entry" : "entries"}
+            </span>
+          )}
         </div>
 
         {loading ? (
-          <div className="px-6 py-16 text-center">
-            <div className="inline-flex items-center gap-2 text-[13px] text-muted">
+          <div className="flex items-center justify-center py-20">
+            <div className="flex items-center gap-2.5 text-[13px] text-muted">
               <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -457,26 +441,28 @@ export default function BillingPage() {
             </div>
           </div>
         ) : flagged.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-success-light">
-              <svg className="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <div className="empty-state">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success-light mb-3">
+              <svg className="h-6 w-6 !text-success !mb-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
             </div>
-            <p className="mt-3 text-[13px] font-medium text-foreground">All clear</p>
-            <p className="mt-1 text-xs text-muted">No time entries flagged by AI quality checks.</p>
+            <h3>All clear</h3>
+            <p>No time entries flagged by AI quality checks.</p>
           </div>
         ) : (
-          <div className="divide-y divide-border-subtle">
+          <div className="grid grid-cols-1 gap-px bg-border-subtle sm:grid-cols-2">
             {flagged.map((item) => (
               <div
                 key={item.id}
-                className="flex items-start gap-4 px-6 py-4 transition-colors hover:bg-card-hover"
+                className="flex items-start gap-4 bg-card p-5 transition-colors hover:bg-card-hover"
               >
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning-light">
-                  <span className="text-[12px] font-bold text-warning tabular-nums">
+                {/* Quality score indicator */}
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-warning-light">
+                  <span className="text-[13px] font-bold text-warning tabular-nums leading-none">
                     {item.quality_score ?? "?"}
                   </span>
+                  <span className="text-[8px] font-medium text-warning/60 uppercase mt-0.5">score</span>
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -485,33 +471,40 @@ export default function BillingPage() {
                       {item.description || "No description"}
                     </p>
                     {item.category && (
-                      <span className="shrink-0 rounded-md bg-primary-light px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                      <span className="badge bg-primary-light text-primary shrink-0">
                         {item.category}
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 flex items-center gap-3 text-[11px] text-muted">
+                  <div className="mt-1.5 flex items-center gap-3 text-[12px] text-muted">
                     <span className="tabular-nums">{item.hours.toFixed(1)}h</span>
+                    <span className="text-border-strong">&middot;</span>
                     <span>
                       {item.hourly_rate != null
                         ? `$${item.hourly_rate}/hr`
                         : "No rate"}
                     </span>
+                    <span className="text-border-strong">&middot;</span>
                     <span className="font-semibold tabular-nums text-foreground">
                       {formatCurrency(item.total)}
                     </span>
-                    {item.log_date && <span>{item.log_date}</span>}
+                    {item.log_date && (
+                      <>
+                        <span className="text-border-strong">&middot;</span>
+                        <span>{item.log_date}</span>
+                      </>
+                    )}
                   </div>
-                  <p className="mt-1.5 rounded-md bg-warning-light/50 px-2.5 py-1.5 text-[11px] text-warning leading-relaxed">
+                  <p className="mt-2 rounded-md bg-warning-light/50 px-2.5 py-1.5 text-[11px] text-warning leading-relaxed">
                     Quality score {item.quality_score}/100 is below the 40-point threshold.
-                    This entry needs manual approval before it can be billed.
+                    Manual approval required before billing.
                   </p>
                 </div>
 
                 <button
                   onClick={() => handleApprove(item)}
                   disabled={approving === item.id}
-                  className="shrink-0 flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(99,102,241,0.3)] transition-all duration-150 hover:bg-primary-hover hover:shadow-[0_2px_8px_rgba(99,102,241,0.3)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn btn-primary !py-1.5 !px-3 !text-[12px] shrink-0 mt-0.5"
                 >
                   {approving === item.id ? (
                     <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">

@@ -203,16 +203,12 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="mb-6 flex gap-1 rounded-lg bg-background p-1 w-fit border border-border">
+      <div className="tab-bar mb-6">
         {(["general", "webhooks", "api-keys", "security"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-md px-4 py-1.5 text-[13px] font-medium transition-all duration-150 ${
-              tab === t
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted hover:text-foreground"
-            }`}
+            className={`tab-item ${tab === t ? "tab-item-active" : ""}`}
           >
             {t === "api-keys" ? "API Keys" : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
@@ -237,7 +233,7 @@ export default function SettingsPage() {
                 type="text"
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                className="input"
                 placeholder="Your organization name"
               />
             </div>
@@ -250,7 +246,7 @@ export default function SettingsPage() {
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                className="input"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.value} value={c.value}>
@@ -268,7 +264,7 @@ export default function SettingsPage() {
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                className="input"
               >
                 {TIMEZONES.map((tz) => (
                   <option key={tz} value={tz}>
@@ -282,7 +278,7 @@ export default function SettingsPage() {
             <div className="pt-2">
               <button
                 onClick={handleSaveGeneral}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
+                className="btn btn-primary"
               >
                 Save Changes
               </button>
@@ -304,7 +300,7 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={() => setShowWebhookForm(!showWebhookForm)}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
+              className="btn btn-primary"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -326,7 +322,7 @@ export default function SettingsPage() {
                     type="url"
                     value={newWebhookUrl}
                     onChange={(e) => setNewWebhookUrl(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                    className="input"
                     placeholder="https://your-app.com/webhook"
                   />
                 </div>
@@ -355,7 +351,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleAddWebhook}
                     disabled={!newWebhookUrl || newWebhookEvents.length === 0}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn btn-primary"
                   >
                     Save Webhook
                   </button>
@@ -365,7 +361,7 @@ export default function SettingsPage() {
                       setNewWebhookUrl("");
                       setNewWebhookEvents([]);
                     }}
-                    className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-[13px] font-medium transition-colors hover:bg-card-hover"
+                    className="btn btn-secondary"
                   >
                     Cancel
                   </button>
@@ -434,7 +430,7 @@ export default function SettingsPage() {
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => handleDeleteWebhook(wh.id)}
-                          className="inline-flex items-center gap-1 rounded-md bg-danger/10 px-2.5 py-1.5 text-[12px] font-medium text-danger transition-colors hover:bg-danger/20"
+                          className="btn btn-danger text-[12px]"
                         >
                           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -464,7 +460,7 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={() => setShowKeyForm(!showKeyForm)}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
+              className="btn btn-primary"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -486,7 +482,7 @@ export default function SettingsPage() {
                     type="text"
                     value={newKeyName}
                     onChange={(e) => setNewKeyName(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                    className="input"
                     placeholder="e.g., CI/CD Pipeline, Reporting Integration"
                   />
                 </div>
@@ -494,7 +490,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleGenerateKey}
                     disabled={!newKeyName}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn btn-primary"
                   >
                     Generate Key
                   </button>
@@ -503,7 +499,7 @@ export default function SettingsPage() {
                       setShowKeyForm(false);
                       setNewKeyName("");
                     }}
-                    className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-[13px] font-medium transition-colors hover:bg-card-hover"
+                    className="btn btn-secondary"
                   >
                     Cancel
                   </button>
@@ -586,7 +582,7 @@ export default function SettingsPage() {
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => handleRevokeKey(key.id)}
-                          className="inline-flex items-center gap-1 rounded-md bg-danger/10 px-2.5 py-1.5 text-[12px] font-medium text-danger transition-colors hover:bg-danger/20"
+                          className="btn btn-danger text-[12px]"
                         >
                           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />

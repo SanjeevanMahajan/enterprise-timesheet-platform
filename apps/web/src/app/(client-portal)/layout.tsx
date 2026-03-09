@@ -65,7 +65,7 @@ export default function ClientPortalLayout({
   return (
     <div className="min-h-screen bg-background">
       {/* Client portal header */}
-      <header className="sticky top-0 z-30 border-b border-border bg-card">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-white text-xs font-bold">
@@ -88,7 +88,7 @@ export default function ClientPortalLayout({
                 logout();
                 router.push("/login");
               }}
-              className="rounded-lg border border-border px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-background hover:text-foreground"
+              className="btn btn-secondary text-[12px] py-1.5"
             >
               Sign out
             </button>

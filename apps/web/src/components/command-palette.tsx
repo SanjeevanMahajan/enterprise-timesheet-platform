@@ -184,7 +184,7 @@ export function CommandPalette() {
     return (
       <button
         onClick={openPalette}
-        className="relative flex w-full max-w-sm items-center rounded-lg border border-border bg-background py-1.5 pl-9 pr-3 text-[13px] text-muted-foreground transition-all duration-150 hover:border-primary/40 hover:text-foreground"
+        className="relative flex w-full max-w-[280px] items-center rounded-lg border border-border bg-surface-inset py-[6px] pl-8 pr-3 text-[12px] text-muted-foreground transition-all duration-150 hover:border-border-strong hover:text-foreground"
       >
         <svg
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -200,9 +200,7 @@ export function CommandPalette() {
           />
         </svg>
         <span>Search…</span>
-        <kbd className="ml-auto hidden rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-block">
-          ⌘K
-        </kbd>
+        <kbd className="kbd ml-auto hidden sm:inline-block">⌘K</kbd>
       </button>
     );
   }
@@ -217,7 +215,7 @@ export function CommandPalette() {
       />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-fade-in-up">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-xl)] animate-scale-in">
         {/* Input row */}
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
           <svg

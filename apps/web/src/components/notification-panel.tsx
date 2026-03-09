@@ -158,7 +158,7 @@ export function NotificationPanel() {
       {/* Bell button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-background hover:text-foreground"
+        className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-inset hover:text-foreground"
       >
         <svg
           className="h-[18px] w-[18px]"
@@ -183,7 +183,7 @@ export function NotificationPanel() {
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[380px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[380px] overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-xl)] animate-slide-in-down">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h3 className="text-[13px] font-semibold text-foreground">
