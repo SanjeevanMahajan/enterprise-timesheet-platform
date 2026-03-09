@@ -46,6 +46,17 @@ async function request<T>(
     } catch {
       body = { detail: res.statusText };
     }
+
+    // Auto-logout on expired/invalid token
+    if (res.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user_profile");
+      window.location.href = "/login";
+      // Return a never-resolving promise to prevent further execution
+      return new Promise<never>(() => {});
+    }
+
     throw new ApiClientError(res.status, body);
   }
 
