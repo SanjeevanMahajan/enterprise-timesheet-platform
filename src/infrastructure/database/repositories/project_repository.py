@@ -26,6 +26,9 @@ class SQLAlchemyProjectRepository(
             description=model.description,
             start_date=model.start_date,
             end_date=model.end_date,
+            client_id=model.client_id,
+            is_billable=model.is_billable,
+            default_hourly_rate=model.default_hourly_rate,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -40,6 +43,9 @@ class SQLAlchemyProjectRepository(
             description=entity.description,
             start_date=entity.start_date,
             end_date=entity.end_date,
+            client_id=entity.client_id,
+            is_billable=entity.is_billable,
+            default_hourly_rate=entity.default_hourly_rate,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
         )
@@ -78,6 +84,27 @@ class SQLAlchemyProjectRepository(
             .where(
                 ProjectModel.tenant_id == tenant_id,
                 ProjectModel.status == status.value,
+            )
+            .order_by(ProjectModel.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await self._session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def list_by_client(
+        self,
+        tenant_id: uuid.UUID,
+        client_id: uuid.UUID,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[Project]:
+        stmt = (
+            select(ProjectModel)
+            .where(
+                ProjectModel.tenant_id == tenant_id,
+                ProjectModel.client_id == client_id,
             )
             .order_by(ProjectModel.created_at.desc())
             .offset(offset)

@@ -5,7 +5,6 @@ import uuid
 from src.application.dto.timelog_dto import TimeLogResponse
 from src.application.interfaces.event_publisher import EventPublisher
 from src.application.interfaces.unit_of_work import UnitOfWork
-from src.domain.events.timelog_events import TimerStopped
 from src.domain.exceptions import EntityNotFoundError
 
 
@@ -25,22 +24,12 @@ class StopTimerUseCase:
                 raise EntityNotFoundError("TimeLog", time_log_id)
 
             time_log.stop_timer()
+            # stop_timer() sets approval_status = pending_manager
             time_log = await self._uow.time_logs.update(time_log)
             await self._uow.commit()
 
-        await self._events.publish(
-            TimerStopped(
-                tenant_id=tenant_id,
-                time_log_id=time_log.id,
-                user_id=time_log.user_id,
-                project_id=time_log.project_id,
-                hours=time_log.hours,
-                log_date=time_log.log_date,
-                description=time_log.description,
-                billable=time_log.billable,
-                hourly_rate=time_log.hourly_rate,
-            )
-        )
+        # NOTE: No event published here — the TimeLogApproved event is published
+        # only after a manager approves, gating AI + Billing services.
 
         return TimeLogResponse(
             id=time_log.id,
@@ -57,6 +46,10 @@ class StopTimerUseCase:
             timer_started_at=time_log.timer_started_at,
             timer_stopped_at=time_log.timer_stopped_at,
             is_timer_running=time_log.is_timer_running,
+            timer_status=time_log.timer_status,
+            accumulated_seconds=time_log.accumulated_seconds,
+            is_timer_paused=time_log.is_timer_paused,
+            approval_status=time_log.approval_status,
             ai_category=time_log.ai_category,
             ai_quality_score=time_log.ai_quality_score,
             ai_suggestion=time_log.ai_suggestion,

@@ -16,8 +16,9 @@ export interface UserResponse {
   tenant_id: string;
   email: string;
   full_name: string;
-  role: "admin" | "manager" | "member" | "viewer";
+  role: "admin" | "manager" | "member" | "viewer" | "client";
   is_active: boolean;
+  client_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +27,8 @@ export interface TokenResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
+  role: string;
+  client_id: string | null;
 }
 
 export interface ApiError {
@@ -85,6 +88,11 @@ export interface TimeLogResponse {
   timer_started_at: string | null;
   timer_stopped_at: string | null;
   is_timer_running: boolean;
+  timer_status: "idle" | "running" | "paused" | "completed";
+  accumulated_seconds: number;
+  is_timer_paused: boolean;
+  approval_status: "draft" | "pending_manager" | "approved" | "rejected";
+  timesheet_id: string | null;
   ai_category: string | null;
   ai_quality_score: number | null;
   ai_suggestion: string | null;
@@ -116,6 +124,8 @@ export interface CreateProjectRequest {
 export interface BillingStats {
   total_invoiced: number;
   invoice_count: number;
+  total_paid: number;
+  paid_count: number;
   awaiting_review_count: number;
   awaiting_review_amount: number;
   ready_to_bill_count: number;
@@ -128,6 +138,9 @@ export interface BillingInvoice {
   total: number;
   line_item_count: number;
   status: string;
+  stripe_session_id: string | null;
+  payment_url: string | null;
+  paid_at: string | null;
   created_at: string;
 }
 
@@ -150,10 +163,32 @@ export interface BillingLineItem {
   created_at: string;
 }
 
+// -- Timesheets ---------------------------------------------------------------
+
+export interface TimesheetResponse {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  week_start: string;
+  week_end: string;
+  total_hours: number;
+  status: "draft" | "submitted" | "approved" | "rejected";
+  approved_by: string | null;
+  rejection_reason: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubmitTimesheetRequest {
+  week_start: string;
+  week_end: string;
+}
+
 // -- User Profile (client-side) -----------------------------------------------
 
 export interface UserProfile {
   email: string;
   full_name: string;
   role: string;
+  client_id?: string | null;
 }

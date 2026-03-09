@@ -39,8 +39,25 @@ services:
       - "8001:8001"
     environment:
       REDIS_URL: "redis://redis:6379/0"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-sk_test_51XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      STRIPE_SUCCESS_URL: "http://localhost:3000/billing?paid=true"
+      STRIPE_CANCEL_URL: "http://localhost:3000/billing?cancelled=true"
     volumes:
       - billing-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  reporting-service:
+    build: services/reporting-service
+    ports:
+      - "8002:8002"
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - reporting-data:/app/data
     depends_on:
       redis:
         condition: service_healthy
@@ -76,3 +93,4 @@ services:
 volumes:
   pgdata:
   billing-data:
+  reporting-data:

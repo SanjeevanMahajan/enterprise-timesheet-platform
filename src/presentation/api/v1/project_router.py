@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.application.dto.project_dto import (
     CreateProjectRequest,
@@ -34,7 +34,12 @@ async def list_projects(
     current_user: CurrentUser = Depends(get_current_user),
     use_case: ListProjectsUseCase = Depends(get_list_projects_use_case),
 ) -> list[ProjectResponse]:
-    return await use_case.execute(current_user.tenant_id, offset=offset, limit=limit)
+    return await use_case.execute(
+        current_user.tenant_id,
+        offset=offset,
+        limit=limit,
+        client_id=current_user.client_id if current_user.role == Role.CLIENT else None,
+    )
 
 
 @router.post("", response_model=ProjectResponse, status_code=201)
@@ -52,7 +57,10 @@ async def get_project(
     current_user: CurrentUser = Depends(get_current_user),
     use_case: GetProjectUseCase = Depends(get_get_project_use_case),
 ) -> ProjectResponse:
-    return await use_case.execute(current_user.tenant_id, project_id)
+    project = await use_case.execute(current_user.tenant_id, project_id)
+    if current_user.role == Role.CLIENT and project.client_id != current_user.client_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    return project
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)

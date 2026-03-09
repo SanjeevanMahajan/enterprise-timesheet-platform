@@ -16,11 +16,17 @@ class ListProjectsUseCase:
         *,
         offset: int = 0,
         limit: int = 50,
+        client_id: uuid.UUID | None = None,
     ) -> list[ProjectResponse]:
         async with self._uow:
-            projects = await self._uow.projects.list(
-                tenant_id, offset=offset, limit=limit
-            )
+            if client_id is not None:
+                projects = await self._uow.projects.list_by_client(
+                    tenant_id, client_id, offset=offset, limit=limit
+                )
+            else:
+                projects = await self._uow.projects.list(
+                    tenant_id, offset=offset, limit=limit
+                )
 
         return [
             ProjectResponse(

@@ -86,6 +86,42 @@ def handle_timesheet_rejected(data: dict) -> None:
     log.info("[NOTIFIER] Timesheet rejected for User %s — reason: %s", user_id, reason)
 
 
+def handle_timer_paused(data: dict) -> None:
+    user_id = data.get("user_id", "unknown")
+    accumulated = data.get("accumulated_seconds", 0)
+    log.info("[NOTIFIER] Timer paused by User %s (accumulated=%ds)...", user_id, accumulated)
+
+
+def handle_timer_resumed(data: dict) -> None:
+    user_id = data.get("user_id", "unknown")
+    log.info("[NOTIFIER] Timer resumed by User %s...", user_id)
+
+
+def handle_time_log_approved(data: dict) -> None:
+    time_log_id = data.get("time_log_id", "unknown")
+    user_id = data.get("user_id", "unknown")
+    hours = data.get("hours", 0)
+    log.info(
+        "[NOTIFIER] TimeLog %s APPROVED — user=%s, hours=%s. "
+        "Forwarding to AI + Billing pipeline...",
+        time_log_id,
+        user_id,
+        hours,
+    )
+
+
+def handle_time_log_rejected(data: dict) -> None:
+    time_log_id = data.get("time_log_id", "unknown")
+    user_id = data.get("user_id", "unknown")
+    reason = data.get("reason", "")
+    log.info(
+        "[NOTIFIER] TimeLog %s REJECTED — user=%s, reason: %s",
+        time_log_id,
+        user_id,
+        reason or "(no reason)",
+    )
+
+
 def handle_ai_insight(data: dict) -> None:
     time_log_id = data.get("time_log_id", "unknown")
     category = data.get("category", "unknown")
@@ -104,12 +140,27 @@ def handle_invoice_generated(data: dict) -> None:
     invoice_id = data.get("invoice_id", "unknown")
     total = data.get("total", 0)
     count = data.get("line_item_count", 0)
+    payment_url = data.get("payment_url")
     log.info(
         "[NOTIFIER] Invoice %s generated — %d line items, total $%.2f. "
-        "Sending invoice email to client...",
+        "Sending invoice email to client...%s",
         invoice_id,
         count,
         total,
+        f"\n  Payment link: {payment_url}" if payment_url else "",
+    )
+
+
+def handle_invoice_paid(data: dict) -> None:
+    invoice_id = data.get("invoice_id", "unknown")
+    total = data.get("total", 0)
+    tenant_id = data.get("tenant_id", "unknown")
+    log.info(
+        "[NOTIFIER] Invoice %s PAID ($%.2f) — "
+        "Sending 'Thank You for your payment' receipt to client! (tenant=%s)",
+        invoice_id,
+        total,
+        tenant_id[:8],
     )
 
 
@@ -118,12 +169,17 @@ HANDLERS: dict[str, callable] = {
     "TimeLogCreated": handle_time_log_created,
     "TimerStarted": handle_timer_started,
     "TimerStopped": handle_timer_stopped,
+    "TimerPaused": handle_timer_paused,
+    "TimerResumed": handle_timer_resumed,
+    "TimeLogApproved": handle_time_log_approved,
+    "TimeLogRejected": handle_time_log_rejected,
     "ProjectCreated": handle_project_created,
     "TimesheetSubmitted": handle_timesheet_submitted,
     "TimesheetApproved": handle_timesheet_approved,
     "TimesheetRejected": handle_timesheet_rejected,
     "AIInsightGenerated": handle_ai_insight,
     "InvoiceGenerated": handle_invoice_generated,
+    "InvoicePaid": handle_invoice_paid,
 }
 
 

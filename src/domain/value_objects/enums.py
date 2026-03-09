@@ -6,6 +6,7 @@ class Role(StrEnum):
     MANAGER = "manager"
     MEMBER = "member"
     VIEWER = "viewer"
+    CLIENT = "client"
 
 
 class ProjectStatus(StrEnum):
@@ -46,6 +47,20 @@ class IssueStatus(StrEnum):
 class TimesheetStatus(StrEnum):
     DRAFT = "draft"
     SUBMITTED = "submitted"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class TimerStatus(StrEnum):
+    IDLE = "idle"
+    RUNNING = "running"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+
+
+class ApprovalStatus(StrEnum):
+    DRAFT = "draft"
+    PENDING_MANAGER = "pending_manager"
     APPROVED = "approved"
     REJECTED = "rejected"
 

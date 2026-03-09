@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, String, Text
+from sqlalchemy import Boolean, Date, Float, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,3 +17,6 @@ class ProjectModel(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    is_billable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    default_hourly_rate: Mapped[float | None] = mapped_column(Float, nullable=True)

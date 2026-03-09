@@ -20,6 +20,7 @@ class CurrentUser:
     user_id: uuid.UUID
     tenant_id: uuid.UUID
     role: Role
+    client_id: uuid.UUID | None = None
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
@@ -31,10 +32,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    raw_client_id = payload.get("client_id")
     return CurrentUser(
         user_id=uuid.UUID(payload["sub"]),
         tenant_id=uuid.UUID(payload["tenant_id"]),
         role=Role(payload["role"]),
+        client_id=uuid.UUID(raw_client_id) if raw_client_id else None,
     )
 
 

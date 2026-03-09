@@ -23,11 +23,16 @@ from src.application.use_cases.tasks.list_tasks import ListTasksUseCase
 from src.application.use_cases.tasks.update_task import UpdateTaskUseCase
 from src.application.use_cases.timelogs.create_time_log import CreateTimeLogUseCase
 from src.application.use_cases.timelogs.list_time_logs import ListTimeLogsUseCase
+from src.application.use_cases.timelogs.manager_approve import ManagerApproveUseCase
+from src.application.use_cases.timelogs.manager_reject import ManagerRejectUseCase
+from src.application.use_cases.timelogs.pause_timer import PauseTimerUseCase
+from src.application.use_cases.timelogs.resume_timer import ResumeTimerUseCase
 from src.application.use_cases.timelogs.start_timer import StartTimerUseCase
 from src.application.use_cases.timelogs.stop_timer import StopTimerUseCase
 from src.application.use_cases.timelogs.update_time_log import UpdateTimeLogUseCase
 from src.application.use_cases.timesheets.approve_timesheet import ApproveTimesheetUseCase
 from src.application.use_cases.timesheets.get_timesheet import GetTimesheetUseCase
+from src.application.use_cases.timesheets.list_timesheets import ListTimesheetsUseCase
 from src.application.use_cases.timesheets.reject_timesheet import RejectTimesheetUseCase
 from src.application.use_cases.timesheets.submit_timesheet import SubmitTimesheetUseCase
 from src.application.use_cases.users.authenticate_user import AuthenticateUserUseCase
@@ -131,10 +136,30 @@ def get_stop_timer_use_case() -> StopTimerUseCase:
     return StopTimerUseCase(_uow(), _event_publisher)
 
 
+def get_pause_timer_use_case() -> PauseTimerUseCase:
+    return PauseTimerUseCase(_uow(), _event_publisher)
+
+
+def get_resume_timer_use_case() -> ResumeTimerUseCase:
+    return ResumeTimerUseCase(_uow(), _event_publisher)
+
+
+def get_manager_approve_use_case() -> ManagerApproveUseCase:
+    return ManagerApproveUseCase(_uow(), _event_publisher)
+
+
+def get_manager_reject_use_case() -> ManagerRejectUseCase:
+    return ManagerRejectUseCase(_uow(), _event_publisher)
+
+
 # -- Timesheet use cases -------------------------------------------------------
 
 def get_submit_timesheet_use_case() -> SubmitTimesheetUseCase:
     return SubmitTimesheetUseCase(_uow(), _event_publisher)
+
+
+def get_list_timesheets_use_case() -> ListTimesheetsUseCase:
+    return ListTimesheetsUseCase(_uow())
 
 
 def get_approve_timesheet_use_case() -> ApproveTimesheetUseCase:

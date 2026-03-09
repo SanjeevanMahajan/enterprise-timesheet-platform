@@ -6,8 +6,8 @@ from src.application.dto.timelog_dto import CreateTimeLogRequest, TimeLogRespons
 from src.application.interfaces.event_publisher import EventPublisher
 from src.application.interfaces.unit_of_work import UnitOfWork
 from src.domain.entities.time_log import TimeLog
-from src.domain.events.timelog_events import TimeLogCreated
 from src.domain.exceptions import BusinessRuleViolationError, EntityNotFoundError
+from src.domain.value_objects.enums import ApprovalStatus
 
 
 class CreateTimeLogUseCase:
@@ -47,24 +47,13 @@ class CreateTimeLogUseCase:
                 description=request.description,
                 billable=request.billable,
                 hourly_rate=hourly_rate,
+                approval_status=ApprovalStatus.PENDING_MANAGER,
             )
 
             time_log = await self._uow.time_logs.add(time_log)
             await self._uow.commit()
 
-        await self._events.publish(
-            TimeLogCreated(
-                tenant_id=tenant_id,
-                time_log_id=time_log.id,
-                user_id=user_id,
-                project_id=request.project_id,
-                hours=request.hours,
-                log_date=request.log_date,
-                description=request.description,
-                billable=time_log.billable,
-                hourly_rate=time_log.hourly_rate,
-            )
-        )
+        # NOTE: No event published — waits for manager approval before AI/Billing
 
         return TimeLogResponse(
             id=time_log.id,
@@ -81,6 +70,10 @@ class CreateTimeLogUseCase:
             timer_started_at=time_log.timer_started_at,
             timer_stopped_at=time_log.timer_stopped_at,
             is_timer_running=time_log.is_timer_running,
+            timer_status=time_log.timer_status,
+            accumulated_seconds=time_log.accumulated_seconds,
+            is_timer_paused=time_log.is_timer_paused,
+            approval_status=time_log.approval_status,
             ai_category=time_log.ai_category,
             ai_quality_score=time_log.ai_quality_score,
             ai_suggestion=time_log.ai_suggestion,

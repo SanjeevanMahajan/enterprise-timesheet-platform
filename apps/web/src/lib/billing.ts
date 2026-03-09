@@ -38,3 +38,9 @@ export function approveLineItem(itemId: string): Promise<BillingLineItem> {
     method: "POST",
   });
 }
+
+export function simulatePayment(invoiceId: string): Promise<BillingInvoice> {
+  return billingRequest<BillingInvoice>(`/api/invoices/${invoiceId}/simulate-payment`, {
+    method: "POST",
+  });
+}

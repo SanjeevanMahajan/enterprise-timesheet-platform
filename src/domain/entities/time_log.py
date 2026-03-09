@@ -5,6 +5,7 @@ from datetime import date, datetime
 
 from src.domain.entities.base import Entity
 from src.domain.exceptions import BusinessRuleViolationError
+from src.domain.value_objects.enums import ApprovalStatus, TimerStatus
 
 
 class TimeLog(Entity):
@@ -24,11 +25,15 @@ class TimeLog(Entity):
         hourly_rate: float | None = None,
         timer_started_at: datetime | None = None,
         timer_stopped_at: datetime | None = None,
+        timer_status: TimerStatus = TimerStatus.IDLE,
+        accumulated_seconds: int = 0,
+        approval_status: ApprovalStatus = ApprovalStatus.DRAFT,
+        timesheet_id: uuid.UUID | None = None,
         id: uuid.UUID | None = None,
         **kwargs,
     ) -> None:
         # Timer-based entries are created with hours=0; manual entries must have hours > 0
-        is_timer_based = timer_started_at is not None
+        is_timer_based = timer_started_at is not None or timer_status != TimerStatus.IDLE
         if not is_timer_based and (hours <= 0 or hours > self.MAX_DAILY_HOURS):
             raise BusinessRuleViolationError(
                 f"Hours must be between 0 and {self.MAX_DAILY_HOURS}"
@@ -47,6 +52,10 @@ class TimeLog(Entity):
         self.hourly_rate = hourly_rate
         self.timer_started_at = timer_started_at
         self.timer_stopped_at = timer_stopped_at
+        self.timer_status = timer_status
+        self.accumulated_seconds = accumulated_seconds
+        self.approval_status = approval_status
+        self.timesheet_id = timesheet_id
         self.ai_category: str | None = None
         self.ai_quality_score: int | None = None
         self.ai_suggestion: str | None = None
@@ -63,22 +72,71 @@ class TimeLog(Entity):
 
     @property
     def is_timer_running(self) -> bool:
-        return self.timer_started_at is not None and self.timer_stopped_at is None
+        return self.timer_status == TimerStatus.RUNNING
+
+    @property
+    def is_timer_paused(self) -> bool:
+        return self.timer_status == TimerStatus.PAUSED
 
     def start_timer(self) -> None:
-        if self.timer_started_at is not None:
+        if self.timer_status != TimerStatus.IDLE:
             raise BusinessRuleViolationError("Timer has already been started")
         self.timer_started_at = datetime.utcnow()
+        self.timer_status = TimerStatus.RUNNING
+        self.touch()
+
+    def pause_timer(self) -> None:
+        if self.timer_status != TimerStatus.RUNNING:
+            raise BusinessRuleViolationError("Timer is not running")
+        now = datetime.utcnow()
+        elapsed = int((now - self.timer_started_at).total_seconds())
+        self.accumulated_seconds += elapsed
+        self.timer_started_at = None
+        self.timer_status = TimerStatus.PAUSED
+        self.hours = round(self.accumulated_seconds / 3600, 2)
+        self.touch()
+
+    def resume_timer(self) -> None:
+        if self.timer_status != TimerStatus.PAUSED:
+            raise BusinessRuleViolationError("Timer is not paused")
+        self.timer_started_at = datetime.utcnow()
+        self.timer_status = TimerStatus.RUNNING
         self.touch()
 
     def stop_timer(self) -> None:
-        if self.timer_started_at is None:
-            raise BusinessRuleViolationError("Timer has not been started")
-        if self.timer_stopped_at is not None:
+        if self.timer_status == TimerStatus.COMPLETED:
             raise BusinessRuleViolationError("Timer has already been stopped")
-        self.timer_stopped_at = datetime.utcnow()
-        elapsed = (self.timer_stopped_at - self.timer_started_at).total_seconds()
-        self.hours = round(elapsed / 3600, 2)
+        if self.timer_status == TimerStatus.IDLE:
+            raise BusinessRuleViolationError("Timer has not been started")
+
+        now = datetime.utcnow()
+        # If running, accumulate the final segment
+        if self.timer_status == TimerStatus.RUNNING and self.timer_started_at:
+            elapsed = int((now - self.timer_started_at).total_seconds())
+            self.accumulated_seconds += elapsed
+
+        self.timer_stopped_at = now
+        self.timer_status = TimerStatus.COMPLETED
+        self.hours = round(self.accumulated_seconds / 3600, 2)
+        self.approval_status = ApprovalStatus.PENDING_MANAGER
+        self.touch()
+
+    # ── Approval operations ──────────────────────────────────────────────
+
+    def approve(self) -> None:
+        if self.approval_status not in (ApprovalStatus.PENDING_MANAGER, ApprovalStatus.REJECTED):
+            raise BusinessRuleViolationError(
+                f"Cannot approve a time log with status '{self.approval_status}'"
+            )
+        self.approval_status = ApprovalStatus.APPROVED
+        self.touch()
+
+    def reject(self, reason: str = "") -> None:
+        if self.approval_status != ApprovalStatus.PENDING_MANAGER:
+            raise BusinessRuleViolationError(
+                f"Cannot reject a time log with status '{self.approval_status}'"
+            )
+        self.approval_status = ApprovalStatus.REJECTED
         self.touch()
 
     # ── Billing ──────────────────────────────────────────────────────────

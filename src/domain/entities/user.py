@@ -16,6 +16,7 @@ class User(Entity):
         hashed_password: str,
         role: Role = Role.MEMBER,
         is_active: bool = True,
+        client_id: uuid.UUID | None = None,
         id: uuid.UUID | None = None,
         **kwargs,
     ) -> None:
@@ -25,6 +26,7 @@ class User(Entity):
         self.hashed_password = hashed_password
         self.role = role
         self.is_active = is_active
+        self.client_id = client_id
 
     def deactivate(self) -> None:
         self.is_active = False
@@ -35,5 +37,5 @@ class User(Entity):
         self.touch()
 
     def has_permission(self, required_role: Role) -> bool:
-        hierarchy = {Role.ADMIN: 4, Role.MANAGER: 3, Role.MEMBER: 2, Role.VIEWER: 1}
+        hierarchy = {Role.ADMIN: 4, Role.MANAGER: 3, Role.MEMBER: 2, Role.VIEWER: 1, Role.CLIENT: 0}
         return hierarchy.get(self.role, 0) >= hierarchy.get(required_role, 0)

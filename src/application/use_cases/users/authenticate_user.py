@@ -11,7 +11,9 @@ from src.domain.exceptions import AuthorizationError
 
 class TokenService(ABC):
     @abstractmethod
-    def create_access_token(self, user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) -> str: ...
+    def create_access_token(
+        self, user_id: uuid.UUID, tenant_id: uuid.UUID, role: str, client_id: uuid.UUID | None = None
+    ) -> str: ...
 
     @abstractmethod
     def create_refresh_token(self, user_id: uuid.UUID, tenant_id: uuid.UUID) -> str: ...
@@ -44,9 +46,11 @@ class AuthenticateUserUseCase:
 
         return TokenResponse(
             access_token=self._tokens.create_access_token(
-                user.id, user.tenant_id, user.role
+                user.id, user.tenant_id, user.role, user.client_id
             ),
             refresh_token=self._tokens.create_refresh_token(
                 user.id, user.tenant_id
             ),
+            role=user.role,
+            client_id=user.client_id,
         )

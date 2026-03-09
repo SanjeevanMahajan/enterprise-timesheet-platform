@@ -17,11 +17,12 @@ export async function login(data: LoginRequest): Promise<TokenResponse> {
   const tokens = await apiClient.post<TokenResponse>("/auth/login", data);
   localStorage.setItem("access_token", tokens.access_token);
   localStorage.setItem("refresh_token", tokens.refresh_token);
-  // Store at least the email we know from the login form
-  const existing = getUserProfile();
-  if (!existing || existing.email !== data.email) {
-    saveUserProfile({ email: data.email, full_name: "", role: "member" });
-  }
+  saveUserProfile({
+    email: data.email,
+    full_name: "",
+    role: tokens.role ?? "member",
+    client_id: tokens.client_id ?? null,
+  });
   return tokens;
 }
 

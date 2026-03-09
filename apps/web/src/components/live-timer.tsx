@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { startTimer, stopTimer } from "@/lib/timelogs";
+import { startTimer, pauseTimer, resumeTimer, stopTimer } from "@/lib/timelogs";
 import { listProjects } from "@/lib/projects";
 import { listTasks } from "@/lib/tasks";
 import type { ProjectResponse, TaskResponse, TimeLogResponse } from "@/lib/types";
@@ -61,13 +61,14 @@ export function LiveTimer({
       .catch(() => setTasks([]));
   }, [selectedProjectId]);
 
-  // Tick the timer every second when active
+  // Tick the timer every second when running (not paused)
   useEffect(() => {
-    if (activeLog) {
+    if (activeLog && activeLog.timer_status === "running" && activeLog.timer_started_at) {
       intervalRef.current = setInterval(() => {
         const started = new Date(activeLog.timer_started_at!).getTime();
         const now = Date.now();
-        setElapsed(Math.floor((now - started) / 1000));
+        const currentSegment = Math.floor((now - started) / 1000);
+        setElapsed(activeLog.accumulated_seconds + currentSegment);
       }, 1000);
     }
     return () => {
@@ -97,6 +98,37 @@ export function LiveTimer({
     }
   }, [selectedProjectId, selectedTaskId, description]);
 
+  const handlePause = useCallback(async () => {
+    if (!activeLog) return;
+    setError("");
+    setLoading(true);
+    try {
+      const log = await pauseTimer(activeLog.id);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setActiveLog(log);
+      setElapsed(log.accumulated_seconds);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to pause timer");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeLog]);
+
+  const handleResume = useCallback(async () => {
+    if (!activeLog) return;
+    setError("");
+    setLoading(true);
+    try {
+      const log = await resumeTimer(activeLog.id);
+      setActiveLog(log);
+      // elapsed will be recalculated by the interval effect
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resume timer");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeLog]);
+
   const handleStop = useCallback(async () => {
     if (!activeLog) return;
     setError("");
@@ -114,7 +146,9 @@ export function LiveTimer({
     }
   }, [activeLog, onTimerStopped]);
 
-  const isRunning = activeLog !== null;
+  const isActive = activeLog !== null;
+  const isRunning = activeLog?.timer_status === "running";
+  const isPaused = activeLog?.timer_status === "paused";
   const time = formatElapsed(elapsed);
 
   return (
@@ -122,7 +156,9 @@ export function LiveTimer({
       className={`rounded-2xl border bg-card overflow-hidden transition-all duration-300 ${
         isRunning
           ? "border-primary/30 animate-timer-glow"
-          : "border-border shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+          : isPaused
+            ? "border-warning/30"
+            : "border-border shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       }`}
     >
       {/* Timer header */}
@@ -144,25 +180,34 @@ export function LiveTimer({
             Live
           </span>
         )}
+        {isPaused && (
+          <span className="flex items-center gap-1.5 rounded-full bg-warning-light px-2.5 py-1 text-[11px] font-semibold text-warning uppercase tracking-wide">
+            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+            Paused
+          </span>
+        )}
       </div>
 
-      {/* Timer display — clean sans-serif numbers */}
+      {/* Timer display */}
       <div className="px-6 py-6">
         <div className="flex items-baseline justify-center">
-          <span className={`text-[52px] font-bold leading-none tracking-tight tabular-nums ${isRunning ? "text-foreground" : "text-muted-foreground"}`}>
+          <span className={`text-[52px] font-bold leading-none tracking-tight tabular-nums ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
             {time.h}
           </span>
-          <span className={`text-[52px] font-light leading-none mx-0.5 ${isRunning ? "text-primary" : "text-border"}`}>:</span>
-          <span className={`text-[52px] font-bold leading-none tracking-tight tabular-nums ${isRunning ? "text-foreground" : "text-muted-foreground"}`}>
+          <span className={`text-[52px] font-light leading-none mx-0.5 ${isRunning ? "text-primary" : isPaused ? "text-warning" : "text-border"}`}>:</span>
+          <span className={`text-[52px] font-bold leading-none tracking-tight tabular-nums ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
             {time.m}
           </span>
-          <span className={`text-[52px] font-light leading-none mx-0.5 ${isRunning ? "text-primary" : "text-border"}`}>:</span>
-          <span className={`text-[52px] font-bold leading-none tracking-tight tabular-nums ${isRunning ? "text-primary" : "text-muted-foreground"}`}>
+          <span className={`text-[52px] font-light leading-none mx-0.5 ${isRunning ? "text-primary" : isPaused ? "text-warning" : "text-border"}`}>:</span>
+          <span className={`text-[52px] font-bold leading-none tracking-tight tabular-nums ${isRunning ? "text-primary" : isPaused ? "text-warning" : "text-muted-foreground"}`}>
             {time.s}
           </span>
         </div>
         <p className="mt-2 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
-          {isRunning ? "Elapsed time" : "Ready to track"}
+          {isRunning ? "Elapsed time" : isPaused ? "Paused" : "Ready to track"}
         </p>
       </div>
 
@@ -177,7 +222,7 @@ export function LiveTimer({
           </div>
         )}
 
-        {!isRunning ? (
+        {!isActive ? (
           <div className="space-y-2.5">
             {/* Project selector */}
             <div>
@@ -297,18 +342,50 @@ export function LiveTimer({
               </div>
             )}
 
-            <button
-              onClick={handleStop}
-              disabled={loading}
-              className="w-full rounded-lg bg-danger px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(239,68,68,0.3)] transition-all duration-150 hover:bg-danger/90 hover:shadow-[0_2px_8px_rgba(239,68,68,0.25)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-            >
-              <span className="flex items-center justify-center gap-2">
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="6" width="12" height="12" rx="1" />
-                </svg>
-                {loading ? "Stopping..." : "Stop Timer"}
-              </span>
-            </button>
+            {/* Button row: Pause/Resume + Stop */}
+            <div className="flex gap-2">
+              {isRunning ? (
+                <button
+                  onClick={handlePause}
+                  disabled={loading}
+                  className="flex-1 rounded-lg bg-warning px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(245,158,11,0.3)] transition-all duration-150 hover:bg-warning/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                    {loading ? "Pausing..." : "Pause"}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleResume}
+                  disabled={loading}
+                  className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(99,102,241,0.3)] transition-all duration-150 hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                    </svg>
+                    {loading ? "Resuming..." : "Resume"}
+                  </span>
+                </button>
+              )}
+
+              <button
+                onClick={handleStop}
+                disabled={loading}
+                className="flex-1 rounded-lg bg-danger px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(239,68,68,0.3)] transition-all duration-150 hover:bg-danger/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="1" />
+                  </svg>
+                  {loading ? "Stopping..." : "Stop"}
+                </span>
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -8,7 +8,7 @@ from src.application.interfaces.unit_of_work import UnitOfWork
 from src.domain.entities.timesheet import Timesheet
 from src.domain.events.timesheet_events import TimesheetSubmitted
 from src.domain.exceptions import BusinessRuleViolationError
-from src.domain.value_objects.enums import TimesheetStatus
+from src.domain.value_objects.enums import ApprovalStatus, TimesheetStatus
 
 
 class SubmitTimesheetUseCase:
@@ -32,7 +32,7 @@ class SubmitTimesheetUseCase:
                     f"with status '{existing.status}'"
                 )
 
-            # Calculate total hours from time logs for the week
+            # Collect all time logs for the user in the date range
             time_logs = await self._uow.time_logs.list_by_user(
                 tenant_id,
                 user_id,
@@ -57,6 +57,13 @@ class SubmitTimesheetUseCase:
                 )
                 timesheet.submit()
                 timesheet = await self._uow.timesheets.add(timesheet)
+
+            # Link each time log to this timesheet and set to pending_manager
+            for tl in time_logs:
+                tl.timesheet_id = timesheet.id
+                tl.approval_status = ApprovalStatus.PENDING_MANAGER
+                tl.touch()
+                await self._uow.time_logs.update(tl)
 
             await self._uow.commit()
 

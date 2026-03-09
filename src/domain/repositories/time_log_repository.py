@@ -6,6 +6,7 @@ from datetime import date
 
 from src.domain.entities.time_log import TimeLog
 from src.domain.repositories.base import Repository
+from src.domain.value_objects.enums import ApprovalStatus
 
 
 class TimeLogRepository(Repository[TimeLog]):
@@ -42,4 +43,23 @@ class TimeLogRepository(Repository[TimeLog]):
         user_id: uuid.UUID,
         log_date: date,
     ) -> float:
+        ...
+
+    @abstractmethod
+    async def list_by_approval_status(
+        self,
+        tenant_id: uuid.UUID,
+        status: ApprovalStatus,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[TimeLog]:
+        ...
+
+    @abstractmethod
+    async def list_by_timesheet(
+        self,
+        tenant_id: uuid.UUID,
+        timesheet_id: uuid.UUID,
+    ) -> list[TimeLog]:
         ...

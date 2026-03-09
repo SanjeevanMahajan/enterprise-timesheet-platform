@@ -32,6 +32,10 @@ class StartTimerRequest(BaseModel):
     hourly_rate: float | None = None
 
 
+class RejectRequest(BaseModel):
+    reason: str = ""
+
+
 class TimeLogResponse(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
@@ -47,6 +51,10 @@ class TimeLogResponse(BaseModel):
     timer_started_at: datetime | None
     timer_stopped_at: datetime | None
     is_timer_running: bool
+    timer_status: str = "idle"
+    accumulated_seconds: int = 0
+    is_timer_paused: bool = False
+    approval_status: str = "draft"
     ai_category: str | None = None
     ai_quality_score: int | None = None
     ai_suggestion: str | None = None

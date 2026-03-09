@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 
 from src.application.dto.timelog_dto import StartTimerRequest, TimeLogResponse
 from src.application.interfaces.event_publisher import EventPublisher
@@ -9,6 +9,7 @@ from src.application.interfaces.unit_of_work import UnitOfWork
 from src.domain.entities.time_log import TimeLog
 from src.domain.events.timelog_events import TimerStarted
 from src.domain.exceptions import EntityNotFoundError
+from src.domain.value_objects.enums import TimerStatus
 
 
 class StartTimerUseCase:
@@ -40,6 +41,7 @@ class StartTimerUseCase:
                 billable=request.billable,
                 hourly_rate=hourly_rate,
                 timer_started_at=datetime.utcnow(),
+                timer_status=TimerStatus.RUNNING,
             )
 
             time_log = await self._uow.time_logs.add(time_log)
@@ -69,6 +71,10 @@ class StartTimerUseCase:
             timer_started_at=time_log.timer_started_at,
             timer_stopped_at=time_log.timer_stopped_at,
             is_timer_running=time_log.is_timer_running,
+            timer_status=time_log.timer_status,
+            accumulated_seconds=time_log.accumulated_seconds,
+            is_timer_paused=time_log.is_timer_paused,
+            approval_status=time_log.approval_status,
             ai_category=time_log.ai_category,
             ai_quality_score=time_log.ai_quality_score,
             ai_suggestion=time_log.ai_suggestion,

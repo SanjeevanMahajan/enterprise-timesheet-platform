@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getBillingStats,
   listInvoices,
   listFlaggedItems,
   approveLineItem,
+  simulatePayment,
 } from "@/lib/billing";
 import type { BillingStats, BillingInvoice, BillingLineItem } from "@/lib/types";
 
@@ -14,8 +16,8 @@ import type { BillingStats, BillingInvoice, BillingLineItem } from "@/lib/types"
 // ---------------------------------------------------------------------------
 
 const INVOICE_STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  draft: { bg: "bg-warning-light", text: "text-warning", label: "Draft" },
-  sent: { bg: "bg-primary-light", text: "text-primary", label: "Sent" },
+  draft: { bg: "bg-background", text: "text-muted", label: "Draft" },
+  unpaid: { bg: "bg-warning-light", text: "text-warning", label: "Unpaid" },
   paid: { bg: "bg-success-light", text: "text-success", label: "Paid" },
 };
 
@@ -74,15 +76,29 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
 }
 
 // ---------------------------------------------------------------------------
+// Stripe icon (inline SVG)
+// ---------------------------------------------------------------------------
+
+function StripeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Billing Page
 // ---------------------------------------------------------------------------
 
 export default function BillingPage() {
+  const searchParams = useSearchParams();
   const [stats, setStats] = useState<BillingStats | null>(null);
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [flagged, setFlagged] = useState<BillingLineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<string | null>(null);
+  const [paying, setPaying] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((type: Toast["type"], message: string) => {
@@ -117,15 +133,23 @@ export default function BillingPage() {
     fetchAll();
   }, [fetchAll]);
 
+  // Show toast if redirected from Stripe checkout
+  useEffect(() => {
+    if (searchParams.get("paid") === "true") {
+      addToast("success", "Payment successful! Invoice marked as paid.");
+    } else if (searchParams.get("cancelled") === "true") {
+      addToast("error", "Payment was cancelled.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleApprove(item: BillingLineItem) {
     setApproving(item.id);
     try {
       await approveLineItem(item.id);
       setFlagged((prev) => prev.filter((f) => f.id !== item.id));
-      // Refresh stats since counts changed
       const newStats = await getBillingStats();
       setStats(newStats);
-      // Also refresh invoices in case approval triggered invoice generation
       const newInvoices = await listInvoices();
       setInvoices(newInvoices);
       addToast("success", "Entry approved for billing.");
@@ -133,6 +157,30 @@ export default function BillingPage() {
       addToast("error", err instanceof Error ? err.message : "Failed to approve");
     } finally {
       setApproving(null);
+    }
+  }
+
+  function handlePayNow(inv: BillingInvoice) {
+    if (inv.payment_url) {
+      window.open(inv.payment_url, "_blank", "noopener");
+    }
+  }
+
+  async function handleSimulatePayment(inv: BillingInvoice) {
+    setPaying(inv.id);
+    try {
+      await simulatePayment(inv.id);
+      const [newStats, newInvoices] = await Promise.all([
+        getBillingStats(),
+        listInvoices(),
+      ]);
+      setStats(newStats);
+      setInvoices(newInvoices);
+      addToast("success", `Invoice ${inv.id.slice(0, 8)}... marked as paid!`);
+    } catch (err) {
+      addToast("error", err instanceof Error ? err.message : "Failed to simulate payment");
+    } finally {
+      setPaying(null);
     }
   }
 
@@ -160,6 +208,18 @@ export default function BillingPage() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
         </svg>
       ),
+      accent: "text-primary",
+      accentBg: "bg-primary-light",
+    },
+    {
+      label: "Revenue Collected",
+      value: stats ? formatCurrency(stats.total_paid) : "—",
+      sub: stats ? `${stats.paid_count} paid` : "",
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      ),
       accent: "text-success",
       accentBg: "bg-success-light",
     },
@@ -175,19 +235,11 @@ export default function BillingPage() {
       accent: "text-warning",
       accentBg: "bg-warning-light",
     },
-    {
-      label: "Ready to Bill",
-      value: stats ? String(stats.ready_to_bill_count) : "—",
-      sub: stats ? formatCurrency(stats.ready_to_bill_amount) : "",
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-        </svg>
-      ),
-      accent: "text-primary",
-      accentBg: "bg-primary-light",
-    },
   ];
+
+  // Check if an invoice is payable (unpaid or draft with a payment link)
+  const isPayable = (inv: BillingInvoice) =>
+    inv.status !== "paid" && inv.payment_url;
 
   return (
     <>
@@ -196,7 +248,7 @@ export default function BillingPage() {
         <div>
           <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Billing</h1>
           <p className="mt-0.5 text-[13px] text-muted">
-            Invoices, revenue tracking, and AI-flagged entry review.
+            Invoices, Stripe payments, and AI-flagged entry review.
           </p>
         </div>
         <button
@@ -298,6 +350,9 @@ export default function BillingPage() {
                   <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
                     Status
                   </th>
+                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -320,12 +375,49 @@ export default function BillingPage() {
                       </span>
                     </td>
                     <td className="px-6 py-3.5 text-right">
-                      <span className="text-[14px] font-semibold tabular-nums text-success">
+                      <span className={`text-[14px] font-semibold tabular-nums ${inv.status === "paid" ? "text-success" : "text-foreground"}`}>
                         {formatCurrency(inv.total)}
                       </span>
                     </td>
                     <td className="px-6 py-3.5">
                       <InvoiceStatusBadge status={inv.status} />
+                    </td>
+                    <td className="px-6 py-3.5 text-right">
+                      {inv.status === "paid" ? (
+                        <span className="text-[11px] text-muted">
+                          {inv.paid_at ? formatDate(inv.paid_at) : "Paid"}
+                        </span>
+                      ) : isPayable(inv) ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handlePayNow(inv)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#635bff] px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_1px_2px_rgba(99,91,255,0.3)] transition-all duration-150 hover:bg-[#5851ea] hover:shadow-[0_2px_8px_rgba(99,91,255,0.3)] active:scale-[0.98]"
+                          >
+                            <StripeIcon className="h-3 w-3" />
+                            Pay Now
+                          </button>
+                          <button
+                            onClick={() => handleSimulatePayment(inv)}
+                            disabled={paying === inv.id}
+                            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-muted transition-colors hover:bg-card-hover hover:text-foreground disabled:opacity-50"
+                            title="Simulate payment (dev mode)"
+                          >
+                            {paying === inv.id ? (
+                              <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                              </svg>
+                            )}
+                            Demo Pay
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -381,14 +473,12 @@ export default function BillingPage() {
                 key={item.id}
                 className="flex items-start gap-4 px-6 py-4 transition-colors hover:bg-card-hover"
               >
-                {/* Warning indicator */}
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning-light">
                   <span className="text-[12px] font-bold text-warning tabular-nums">
                     {item.quality_score ?? "?"}
                   </span>
                 </div>
 
-                {/* Details */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-[13px] font-medium truncate">
@@ -412,14 +502,12 @@ export default function BillingPage() {
                     </span>
                     {item.log_date && <span>{item.log_date}</span>}
                   </div>
-                  {/* AI quality explanation */}
                   <p className="mt-1.5 rounded-md bg-warning-light/50 px-2.5 py-1.5 text-[11px] text-warning leading-relaxed">
                     Quality score {item.quality_score}/100 is below the 40-point threshold.
                     This entry needs manual approval before it can be billed.
                   </p>
                 </div>
 
-                {/* Approve button */}
                 <button
                   onClick={() => handleApprove(item)}
                   disabled={approving === item.id}

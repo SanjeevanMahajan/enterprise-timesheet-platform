@@ -23,6 +23,7 @@ class SQLAlchemyUserRepository(SQLAlchemyRepository[User, UserModel], UserReposi
             hashed_password=model.hashed_password,
             role=Role(model.role),
             is_active=model.is_active,
+            client_id=model.client_id,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -36,6 +37,7 @@ class SQLAlchemyUserRepository(SQLAlchemyRepository[User, UserModel], UserReposi
             hashed_password=entity.hashed_password,
             role=entity.role.value,
             is_active=entity.is_active,
+            client_id=entity.client_id,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
         )

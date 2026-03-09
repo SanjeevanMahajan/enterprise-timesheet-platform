@@ -13,12 +13,14 @@ class CreateUserRequest(BaseModel):
     full_name: str
     password: str
     role: Role = Role.MEMBER
+    client_id: uuid.UUID | None = None
 
 
 class UpdateUserRequest(BaseModel):
     full_name: str | None = None
     role: Role | None = None
     is_active: bool | None = None
+    client_id: uuid.UUID | None = None
 
 
 class UserResponse(BaseModel):
@@ -28,6 +30,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: Role
     is_active: bool
+    client_id: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -43,3 +46,5 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    role: str = "member"
+    client_id: uuid.UUID | None = None

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthenticated } from "@/lib/auth";
+import { getUserProfile, isAuthenticated } from "@/lib/auth";
 import { Sidebar } from "@/components/sidebar";
 
 export default function DashboardLayout({
@@ -16,9 +16,14 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace("/login");
-    } else {
-      setChecked(true);
+      return;
     }
+    const profile = getUserProfile();
+    if (profile?.role === "client") {
+      router.replace("/client/dashboard");
+      return;
+    }
+    setChecked(true);
   }, [router]);
 
   if (!checked) return null;

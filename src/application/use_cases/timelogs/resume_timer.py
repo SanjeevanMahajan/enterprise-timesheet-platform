@@ -2,38 +2,39 @@ from __future__ import annotations
 
 import uuid
 
-from src.application.dto.timelog_dto import TimeLogResponse, UpdateTimeLogRequest
+from src.application.dto.timelog_dto import TimeLogResponse
+from src.application.interfaces.event_publisher import EventPublisher
 from src.application.interfaces.unit_of_work import UnitOfWork
+from src.domain.events.timelog_events import TimerResumed
 from src.domain.exceptions import EntityNotFoundError
 
 
-class UpdateTimeLogUseCase:
-    def __init__(self, uow: UnitOfWork) -> None:
+class ResumeTimerUseCase:
+    def __init__(self, uow: UnitOfWork, events: EventPublisher) -> None:
         self._uow = uow
+        self._events = events
 
     async def execute(
         self,
         tenant_id: uuid.UUID,
         time_log_id: uuid.UUID,
-        request: UpdateTimeLogRequest,
     ) -> TimeLogResponse:
         async with self._uow:
             time_log = await self._uow.time_logs.get_by_id(tenant_id, time_log_id)
             if time_log is None:
                 raise EntityNotFoundError("TimeLog", time_log_id)
 
-            if request.hours is not None:
-                time_log.update_hours(request.hours)
-            if request.description is not None:
-                time_log.description = request.description
-            if request.billable is not None:
-                time_log.billable = request.billable
-            if request.hourly_rate is not None:
-                time_log.hourly_rate = request.hourly_rate
-
-            time_log.touch()
+            time_log.resume_timer()
             time_log = await self._uow.time_logs.update(time_log)
             await self._uow.commit()
+
+        await self._events.publish(
+            TimerResumed(
+                tenant_id=tenant_id,
+                time_log_id=time_log.id,
+                user_id=time_log.user_id,
+            )
+        )
 
         return TimeLogResponse(
             id=time_log.id,

@@ -31,16 +31,22 @@ class JWTTokenService(TokenService):
         self._refresh_expire_days = refresh_expire_days
 
     def create_access_token(
-        self, user_id: uuid.UUID, tenant_id: uuid.UUID, role: str
+        self,
+        user_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+        role: str,
+        client_id: uuid.UUID | None = None,
     ) -> str:
         expires = datetime.utcnow() + timedelta(minutes=self._access_expire_minutes)
-        payload = {
+        payload: dict[str, Any] = {
             "sub": str(user_id),
             "tenant_id": str(tenant_id),
             "role": role,
             "type": "access",
             "exp": expires,
         }
+        if client_id is not None:
+            payload["client_id"] = str(client_id)
         return jwt.encode(payload, self._secret_key, algorithm=self._algorithm)
 
     def create_refresh_token(

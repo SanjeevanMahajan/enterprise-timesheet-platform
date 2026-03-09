@@ -45,6 +45,7 @@ class RegisterUserUseCase:
                 full_name=request.full_name,
                 hashed_password=self._hasher.hash(request.password),
                 role=request.role,
+                client_id=request.client_id,
             )
 
             user = await self._uow.users.add(user)
@@ -66,6 +67,7 @@ class RegisterUserUseCase:
             full_name=user.full_name,
             role=user.role,
             is_active=user.is_active,
+            client_id=user.client_id,
             created_at=user.created_at,
             updated_at=user.updated_at,
         )

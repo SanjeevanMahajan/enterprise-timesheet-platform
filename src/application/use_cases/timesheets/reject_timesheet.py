@@ -5,6 +5,7 @@ import uuid
 from src.application.dto.timesheet_dto import RejectTimesheetRequest, TimesheetResponse
 from src.application.interfaces.event_publisher import EventPublisher
 from src.application.interfaces.unit_of_work import UnitOfWork
+from src.domain.events.timelog_events import TimeLogRejected
 from src.domain.events.timesheet_events import TimesheetRejected
 from src.domain.exceptions import EntityNotFoundError
 
@@ -21,6 +22,8 @@ class RejectTimesheetUseCase:
         approver_id: uuid.UUID,
         request: RejectTimesheetRequest,
     ) -> TimesheetResponse:
+        rejected_logs = []
+
         async with self._uow:
             timesheet = await self._uow.timesheets.get_by_id(tenant_id, timesheet_id)
             if timesheet is None:
@@ -28,8 +31,19 @@ class RejectTimesheetUseCase:
 
             timesheet.reject(approver_id, request.reason)
             timesheet = await self._uow.timesheets.update(timesheet)
+
+            # Cascade: reject all linked time logs
+            time_logs = await self._uow.time_logs.list_by_timesheet(
+                tenant_id, timesheet_id
+            )
+            for tl in time_logs:
+                tl.reject(request.reason)
+                await self._uow.time_logs.update(tl)
+                rejected_logs.append(tl)
+
             await self._uow.commit()
 
+        # Publish timesheet-level event
         await self._events.publish(
             TimesheetRejected(
                 tenant_id=tenant_id,
@@ -39,6 +53,17 @@ class RejectTimesheetUseCase:
                 reason=request.reason,
             )
         )
+
+        # Publish individual TimeLogRejected events
+        for tl in rejected_logs:
+            await self._events.publish(
+                TimeLogRejected(
+                    tenant_id=tenant_id,
+                    time_log_id=tl.id,
+                    user_id=tl.user_id,
+                    reason=request.reason,
+                )
+            )
 
         return TimesheetResponse(
             id=timesheet.id,

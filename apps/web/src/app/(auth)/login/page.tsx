@@ -19,8 +19,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login({ email, password });
-      router.push("/dashboard");
+      const tokens = await login({ email, password });
+      router.push(tokens.role === "client" ? "/client/dashboard" : "/dashboard");
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message);

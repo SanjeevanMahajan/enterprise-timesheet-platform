@@ -5,6 +5,7 @@ from datetime import date
 
 from src.application.dto.timelog_dto import TimeLogResponse
 from src.application.interfaces.unit_of_work import UnitOfWork
+from src.domain.value_objects.enums import ApprovalStatus
 
 
 class ListTimeLogsUseCase:
@@ -17,13 +18,18 @@ class ListTimeLogsUseCase:
         *,
         user_id: uuid.UUID | None = None,
         project_id: uuid.UUID | None = None,
+        approval_status: ApprovalStatus | None = None,
         start_date: date | None = None,
         end_date: date | None = None,
         offset: int = 0,
         limit: int = 50,
     ) -> list[TimeLogResponse]:
         async with self._uow:
-            if user_id is not None:
+            if approval_status is not None:
+                logs = await self._uow.time_logs.list_by_approval_status(
+                    tenant_id, approval_status, offset=offset, limit=limit
+                )
+            elif user_id is not None:
                 logs = await self._uow.time_logs.list_by_user(
                     tenant_id,
                     user_id,
@@ -62,6 +68,10 @@ class ListTimeLogsUseCase:
                 timer_started_at=tl.timer_started_at,
                 timer_stopped_at=tl.timer_stopped_at,
                 is_timer_running=tl.is_timer_running,
+                timer_status=tl.timer_status,
+                accumulated_seconds=tl.accumulated_seconds,
+                is_timer_paused=tl.is_timer_paused,
+                approval_status=tl.approval_status,
                 ai_category=tl.ai_category,
                 ai_quality_score=tl.ai_quality_score,
                 ai_suggestion=tl.ai_suggestion,

@@ -30,3 +30,14 @@ class ProjectRepository(Repository[Project]):
         limit: int = 50,
     ) -> list[Project]:
         ...
+
+    @abstractmethod
+    async def list_by_client(
+        self,
+        tenant_id: uuid.UUID,
+        client_id: uuid.UUID,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[Project]:
+        ...
