@@ -37,6 +37,7 @@ from src.application.use_cases.timesheets.reject_timesheet import RejectTimeshee
 from src.application.use_cases.timesheets.submit_timesheet import SubmitTimesheetUseCase
 from src.application.use_cases.users.authenticate_user import AuthenticateUserUseCase
 from src.application.use_cases.users.register_user import RegisterUserUseCase
+from src.infrastructure.cache.redis_cache import RedisCache
 from src.infrastructure.database.session import async_session_factory
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.messaging.redis_event_publisher import RedisEventPublisher
@@ -52,6 +53,7 @@ _token_service = JWTTokenService()
 _redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 _redis = aioredis.from_url(_redis_url, decode_responses=True)
 _event_publisher = RedisEventPublisher(_redis)
+_cache = RedisCache(_redis)
 
 
 # -- Factory helpers -----------------------------------------------------------
@@ -73,11 +75,11 @@ def get_authenticate_user_use_case() -> AuthenticateUserUseCase:
 # -- Project use cases ---------------------------------------------------------
 
 def get_create_project_use_case() -> CreateProjectUseCase:
-    return CreateProjectUseCase(_uow(), _event_publisher)
+    return CreateProjectUseCase(_uow(), _event_publisher, _cache)
 
 
 def get_update_project_use_case() -> UpdateProjectUseCase:
-    return UpdateProjectUseCase(_uow(), _event_publisher)
+    return UpdateProjectUseCase(_uow(), _event_publisher, _cache)
 
 
 def get_get_project_use_case() -> GetProjectUseCase:
@@ -85,11 +87,11 @@ def get_get_project_use_case() -> GetProjectUseCase:
 
 
 def get_list_projects_use_case() -> ListProjectsUseCase:
-    return ListProjectsUseCase(_uow())
+    return ListProjectsUseCase(_uow(), _cache)
 
 
 def get_delete_project_use_case() -> DeleteProjectUseCase:
-    return DeleteProjectUseCase(_uow())
+    return DeleteProjectUseCase(_uow(), _cache)
 
 
 # -- Task use cases ------------------------------------------------------------
@@ -172,3 +174,10 @@ def get_reject_timesheet_use_case() -> RejectTimesheetUseCase:
 
 def get_get_timesheet_use_case() -> GetTimesheetUseCase:
     return GetTimesheetUseCase(_uow())
+
+
+# -- Webhook dependencies ------------------------------------------------------
+
+def get_webhook_uow() -> UnitOfWork:
+    """Return a UnitOfWork with webhooks repository for the webhook router."""
+    return _uow()

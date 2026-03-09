@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 
+    # OIDC / SSO
+    oidc_enabled: bool = False
+    oidc_issuer_url: str = ""
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+
     # App
     app_name: str = "Enterprise Timesheet Platform"
     debug: bool = False

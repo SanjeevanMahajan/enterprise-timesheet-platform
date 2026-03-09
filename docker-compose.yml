@@ -30,8 +30,12 @@ services:
 
   ai-service:
     build: services/ai-service
+    ports:
+      - "8005:8005"
     environment:
       REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - ai-data:/app/data
     depends_on:
       redis:
         condition: service_healthy
@@ -131,3 +135,4 @@ volumes:
   reporting-data:
   meili-data:
   notifier-data:
+  ai-data:

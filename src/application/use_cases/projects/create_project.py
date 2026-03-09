@@ -8,12 +8,19 @@ from src.application.interfaces.unit_of_work import UnitOfWork
 from src.domain.entities.project import Project
 from src.domain.events.project_events import ProjectCreated
 from src.domain.exceptions import EntityNotFoundError
+from src.infrastructure.cache.redis_cache import RedisCache
 
 
 class CreateProjectUseCase:
-    def __init__(self, uow: UnitOfWork, events: EventPublisher) -> None:
+    def __init__(
+        self,
+        uow: UnitOfWork,
+        events: EventPublisher,
+        cache: RedisCache | None = None,
+    ) -> None:
         self._uow = uow
         self._events = events
+        self._cache = cache
 
     async def execute(
         self,
@@ -37,10 +44,16 @@ class CreateProjectUseCase:
                 client_id=request.client_id,
                 is_billable=request.is_billable,
                 default_hourly_rate=request.default_hourly_rate,
+                currency=request.currency,
+                exchange_rate=request.exchange_rate,
             )
 
             project = await self._uow.projects.add(project)
             await self._uow.commit()
+
+        # Invalidate project list cache for this tenant
+        if self._cache is not None:
+            await self._cache.cache_invalidate_pattern(f"projects:{tenant_id}:*")
 
         await self._events.publish(
             ProjectCreated(
@@ -63,6 +76,8 @@ class CreateProjectUseCase:
             client_id=project.client_id,
             is_billable=project.is_billable,
             default_hourly_rate=project.default_hourly_rate,
+            currency=project.currency,
+            exchange_rate=project.exchange_rate,
             created_at=project.created_at,
             updated_at=project.updated_at,
         )

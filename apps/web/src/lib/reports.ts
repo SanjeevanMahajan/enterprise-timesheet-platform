@@ -72,3 +72,88 @@ export function getExportUrl(): string {
   const base = REPORTING_URL || "";
   return `${base}/api/reports/export`;
 }
+
+// -- Team Report --------------------------------------------------------------
+
+export interface TeamUserEntry {
+  user_id: string;
+  user_name: string;
+  total_hours: number;
+  billable_hours: number;
+  non_billable_hours: number;
+  total_cost: number;
+  entry_count: number;
+}
+
+export interface TeamReport {
+  users: TeamUserEntry[];
+  total_hours: number;
+  total_cost: number;
+}
+
+export async function getTeamReport(tenantId?: string): Promise<TeamReport> {
+  const qs = tenantId ? `?tenant_id=${tenantId}` : "";
+  return reportingGet<TeamReport>(`/api/reports/team${qs}`);
+}
+
+// -- Individual Report --------------------------------------------------------
+
+export interface IndividualReport {
+  user_id: string;
+  total_hours: number;
+  billable_hours: number;
+  non_billable_hours: number;
+  total_cost: number;
+  entries_by_week: BurnRateEntry[];
+}
+
+export async function getIndividualReport(userId: string): Promise<IndividualReport> {
+  return reportingGet<IndividualReport>(`/api/reports/individual?user_id=${userId}`);
+}
+
+// -- Wellness Report ----------------------------------------------------------
+
+export type WellnessRiskLevel = "healthy" | "watch" | "at_risk" | "critical";
+
+export interface WellnessUserEntry {
+  user_id: string;
+  user_name: string;
+  avg_daily_hours: number;
+  overtime_hours: number;
+  risk_level: WellnessRiskLevel;
+  consecutive_overtime_days: number;
+  recommendation: string;
+}
+
+export interface WellnessReport {
+  users: WellnessUserEntry[];
+  overall_risk: WellnessRiskLevel;
+}
+
+export async function getWellnessReport(tenantId?: string): Promise<WellnessReport> {
+  const qs = tenantId ? `?tenant_id=${tenantId}` : "";
+  return reportingGet<WellnessReport>(`/api/reports/wellness${qs}`);
+}
+
+// -- Digest Report ------------------------------------------------------------
+
+export interface DigestReport {
+  tenant_id: string;
+  period: string;
+  narrative: string;
+  highlights: string[];
+  generated_at: string;
+}
+
+export async function getDigest(tenantId?: string): Promise<DigestReport> {
+  const qs = tenantId ? `?tenant_id=${tenantId}` : "";
+  return reportingGet<DigestReport>(`/api/reports/digest${qs}`);
+}
+
+// -- PDF Export ----------------------------------------------------------------
+
+export function getPdfExportUrl(tenantId?: string): string {
+  const base = REPORTING_URL || "";
+  const qs = tenantId ? `?tenant_id=${tenantId}` : "";
+  return `${base}/api/reports/export/pdf${qs}`;
+}

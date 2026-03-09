@@ -20,6 +20,9 @@ from src.infrastructure.database.repositories.timesheet_repository import (
 from src.infrastructure.database.repositories.user_repository import (
     SQLAlchemyUserRepository,
 )
+from src.infrastructure.database.repositories.webhook_repository import (
+    SQLAlchemyWebhookRepository,
+)
 
 
 class SQLAlchemyUnitOfWork(UnitOfWork):
@@ -39,6 +42,7 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         self.tasks = SQLAlchemyTaskRepository(self._session)
         self.time_logs = SQLAlchemyTimeLogRepository(self._session)
         self.timesheets = SQLAlchemyTimesheetRepository(self._session)
+        self.webhooks = SQLAlchemyWebhookRepository(self._session)
         return self
 
     async def __aexit__(

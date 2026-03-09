@@ -7,12 +7,19 @@ from src.application.interfaces.event_publisher import EventPublisher
 from src.application.interfaces.unit_of_work import UnitOfWork
 from src.domain.events.project_events import ProjectStatusChanged
 from src.domain.exceptions import EntityNotFoundError
+from src.infrastructure.cache.redis_cache import RedisCache
 
 
 class UpdateProjectUseCase:
-    def __init__(self, uow: UnitOfWork, events: EventPublisher) -> None:
+    def __init__(
+        self,
+        uow: UnitOfWork,
+        events: EventPublisher,
+        cache: RedisCache | None = None,
+    ) -> None:
         self._uow = uow
         self._events = events
+        self._cache = cache
 
     async def execute(
         self,
@@ -41,12 +48,20 @@ class UpdateProjectUseCase:
                 project.is_billable = request.is_billable
             if request.default_hourly_rate is not None:
                 project.default_hourly_rate = request.default_hourly_rate
+            if request.currency is not None:
+                project.currency = request.currency
+            if request.exchange_rate is not None:
+                project.exchange_rate = request.exchange_rate
             if request.status is not None and request.status != old_status:
                 project.transition_to(request.status)
 
             project.touch()
             project = await self._uow.projects.update(project)
             await self._uow.commit()
+
+        # Invalidate project list cache for this tenant
+        if self._cache is not None:
+            await self._cache.cache_invalidate_pattern(f"projects:{tenant_id}:*")
 
         if request.status is not None and request.status != old_status:
             await self._events.publish(
@@ -70,6 +85,8 @@ class UpdateProjectUseCase:
             client_id=project.client_id,
             is_billable=project.is_billable,
             default_hourly_rate=project.default_hourly_rate,
+            currency=project.currency,
+            exchange_rate=project.exchange_rate,
             created_at=project.created_at,
             updated_at=project.updated_at,
         )

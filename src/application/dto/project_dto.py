@@ -16,6 +16,9 @@ class CreateProjectRequest(BaseModel):
     client_id: uuid.UUID | None = None
     is_billable: bool = True
     default_hourly_rate: float | None = None
+    estimated_hours: float | None = None
+    currency: str = "USD"
+    exchange_rate: float = 1.0
 
 
 class UpdateProjectRequest(BaseModel):
@@ -27,6 +30,9 @@ class UpdateProjectRequest(BaseModel):
     client_id: uuid.UUID | None = None
     is_billable: bool | None = None
     default_hourly_rate: float | None = None
+    estimated_hours: float | None = None
+    currency: str | None = None
+    exchange_rate: float | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -41,6 +47,9 @@ class ProjectResponse(BaseModel):
     client_id: uuid.UUID | None
     is_billable: bool
     default_hourly_rate: float | None
+    estimated_hours: float | None
+    currency: str
+    exchange_rate: float
     created_at: datetime
     updated_at: datetime
 

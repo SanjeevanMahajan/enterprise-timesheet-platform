@@ -20,3 +20,6 @@ class ProjectModel(Base):
     client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     is_billable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     default_hourly_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    estimated_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
+    currency: Mapped[str] = mapped_column(String(10), nullable=False, default="USD")
+    exchange_rate: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)

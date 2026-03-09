@@ -49,6 +49,8 @@ export interface ProjectResponse {
   client_id: string | null;
   is_billable: boolean;
   default_hourly_rate: number | null;
+  estimated_hours: number | null;
+  currency: string;
   created_at: string;
   updated_at: string;
 }

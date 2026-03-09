@@ -33,6 +33,8 @@ class GetProjectUseCase:
             client_id=project.client_id,
             is_billable=project.is_billable,
             default_hourly_rate=project.default_hourly_rate,
+            currency=project.currency,
+            exchange_rate=project.exchange_rate,
             created_at=project.created_at,
             updated_at=project.updated_at,
         )

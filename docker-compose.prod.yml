@@ -32,6 +32,8 @@ services:
         condition: service_started
       notifier:
         condition: service_started
+      ai-service:
+        condition: service_started
     restart: always
 
   # ── Next.js Frontend ─────────────────────────────────────────────────
@@ -79,6 +81,8 @@ services:
     build: services/ai-service
     environment:
       REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - ai-data:/app/data
     depends_on:
       redis:
         condition: service_healthy
@@ -177,3 +181,4 @@ volumes:
   reporting-data:
   meili-data:
   notifier-data:
+  ai-data:

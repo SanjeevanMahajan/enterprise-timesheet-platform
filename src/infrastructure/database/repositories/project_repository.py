@@ -29,6 +29,9 @@ class SQLAlchemyProjectRepository(
             client_id=model.client_id,
             is_billable=model.is_billable,
             default_hourly_rate=model.default_hourly_rate,
+            estimated_hours=model.estimated_hours,
+            currency=model.currency,
+            exchange_rate=model.exchange_rate,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -46,6 +49,9 @@ class SQLAlchemyProjectRepository(
             client_id=entity.client_id,
             is_billable=entity.is_billable,
             default_hourly_rate=entity.default_hourly_rate,
+            estimated_hours=entity.estimated_hours,
+            currency=entity.currency,
+            exchange_rate=entity.exchange_rate,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
         )

@@ -1,3 +1,4 @@
+from src.domain.entities.api_key import ApiKey
 from src.domain.entities.audit_log import AuditLog
 from src.domain.entities.base import Entity
 from src.domain.entities.client import Client
@@ -10,8 +11,10 @@ from src.domain.entities.task import Task
 from src.domain.entities.time_log import TimeLog
 from src.domain.entities.timesheet import Timesheet
 from src.domain.entities.user import User
+from src.domain.entities.webhook import Webhook
 
 __all__ = [
+    "ApiKey",
     "AuditLog",
     "Client",
     "Entity",
@@ -24,4 +27,5 @@ __all__ = [
     "TimeLog",
     "Timesheet",
     "User",
+    "Webhook",
 ]

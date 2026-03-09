@@ -10,6 +10,7 @@ from src.domain.repositories import (
     TimeLogRepository,
     TimesheetRepository,
     UserRepository,
+    WebhookRepository,
 )
 
 
@@ -30,6 +31,7 @@ class UnitOfWork(ABC):
     time_logs: TimeLogRepository
     timesheets: TimesheetRepository
     clients: ClientRepository
+    webhooks: WebhookRepository
 
     @abstractmethod
     async def commit(self) -> None: ...

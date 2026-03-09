@@ -16,11 +16,15 @@ from src.infrastructure.config.settings import settings
 from src.infrastructure.database.models import Base  # noqa: F401 — registers all models
 from src.infrastructure.database.models.time_log_model import TimeLogModel
 from src.infrastructure.database.session import async_session_factory, engine
+from src.infrastructure.middleware.audit_middleware import AuditMiddleware
+from src.infrastructure.middleware.rate_limiter import RateLimiterMiddleware
 from src.presentation.api.v1.auth_router import router as auth_router
 from src.presentation.api.v1.project_router import router as project_router
+from src.presentation.api.v1.sso_router import router as sso_router
 from src.presentation.api.v1.task_router import router as task_router
 from src.presentation.api.v1.timelog_router import router as timelog_router
 from src.presentation.api.v1.timesheet_router import router as timesheet_router
+from src.presentation.api.v1.webhook_router import router as webhook_router
 from src.presentation.exception_handlers import register_exception_handlers
 
 logger = logging.getLogger(__name__)
@@ -114,7 +118,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # -- CORS ------------------------------------------------------------------
+    # -- Middleware (outermost first) --------------------------------------------
+    app.add_middleware(AuditMiddleware)
+    app.add_middleware(RateLimiterMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],  # Tighten in production
@@ -133,6 +139,8 @@ def create_app() -> FastAPI:
     app.include_router(task_router, prefix=api_prefix)
     app.include_router(timelog_router, prefix=api_prefix)
     app.include_router(timesheet_router, prefix=api_prefix)
+    app.include_router(webhook_router, prefix=api_prefix)
+    app.include_router(sso_router, prefix=api_prefix)
 
     # -- Health check ----------------------------------------------------------
     @app.get("/health", tags=["Health"])
