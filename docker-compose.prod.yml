@@ -1,0 +1,179 @@
+# Production Docker Compose — all services behind Nginx on port 80.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Differences from dev compose:
+#   - Nginx reverse proxy (single public port 80)
+#   - Next.js frontend containerised with standalone build
+#   - No host-exposed ports for internal services
+#   - Named volumes for all persistent data
+#   - restart: always on all services
+#   - Production environment variables (override with .env file)
+
+services:
+  # ── API Gateway ──────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      web:
+        condition: service_started
+      nextjs:
+        condition: service_started
+      billing-service:
+        condition: service_started
+      reporting-service:
+        condition: service_started
+      search-service:
+        condition: service_started
+      notifier:
+        condition: service_started
+    restart: always
+
+  # ── Next.js Frontend ─────────────────────────────────────────────────
+  nextjs:
+    build:
+      context: apps/web
+      args:
+        NEXT_PUBLIC_API_URL: /api/v1
+        NEXT_PUBLIC_REPORTING_URL: ""
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: /api/v1
+      NEXT_PUBLIC_REPORTING_URL: ""
+    restart: always
+
+  # ── Core API (FastAPI) ───────────────────────────────────────────────
+  web:
+    build: .
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://timesheet:${POSTGRES_PASSWORD:-timesheet}@db:5432/timesheet"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-change-me-in-production}"
+      REDIS_URL: "redis://redis:6379/0"
+      DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # ── Notification Service ─────────────────────────────────────────────
+  notifier:
+    build: services/notification-service
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - notifier-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # ── AI Analysis Service ──────────────────────────────────────────────
+  ai-service:
+    build: services/ai-service
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # ── Billing Service ──────────────────────────────────────────────────
+  billing-service:
+    build: services/billing-service
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-sk_test_placeholder}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      STRIPE_SUCCESS_URL: "${BASE_URL:-http://localhost}/billing?paid=true"
+      STRIPE_CANCEL_URL: "${BASE_URL:-http://localhost}/billing?cancelled=true"
+    volumes:
+      - billing-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # ── Reporting & Analytics Service ────────────────────────────────────
+  reporting-service:
+    build: services/reporting-service
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - reporting-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # ── Search & Discovery Service ───────────────────────────────────────
+  search-service:
+    build: services/search-service
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      MEILI_URL: "http://meilisearch:7700"
+      MEILI_MASTER_KEY: "${MEILI_MASTER_KEY:-change-me-in-production}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    restart: always
+
+  # ── Meilisearch ─────────────────────────────────────────────────────
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment:
+      MEILI_MASTER_KEY: "${MEILI_MASTER_KEY:-change-me-in-production}"
+      MEILI_ENV: "production"
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+
+  # ── Redis ────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: timesheet
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-timesheet}"
+      POSTGRES_DB: timesheet
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timesheet"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+
+volumes:
+  pgdata:
+  redis-data:
+  billing-data:
+  reporting-data:
+  meili-data:
+  notifier-data:

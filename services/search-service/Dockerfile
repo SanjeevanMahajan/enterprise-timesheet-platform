@@ -2,13 +2,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN mkdir -p /app/data
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY main.py .
 
-EXPOSE 8004
+EXPOSE 8003
 
 CMD ["python", "-u", "main.py"]

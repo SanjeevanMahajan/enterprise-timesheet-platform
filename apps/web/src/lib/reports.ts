@@ -1,8 +1,11 @@
+// In dev: NEXT_PUBLIC_REPORTING_URL=http://localhost:8002 → calls http://localhost:8002/api/reports/burn-rate
+// In prod: NEXT_PUBLIC_REPORTING_URL=                     → calls /api/reports/burn-rate (Nginx proxies directly)
 const REPORTING_URL =
   process.env.NEXT_PUBLIC_REPORTING_URL ?? "http://localhost:8002";
 
 async function reportingGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${REPORTING_URL}${path}`);
+  const url = REPORTING_URL ? `${REPORTING_URL}${path}` : path;
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Reporting API error: ${res.status}`);
   }
@@ -61,5 +64,6 @@ export async function getReportSummary(): Promise<ReportSummary> {
 }
 
 export function getExportUrl(): string {
-  return `${REPORTING_URL}/api/reports/export`;
+  const base = REPORTING_URL || "";
+  return `${base}/api/reports/export`;
 }

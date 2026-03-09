@@ -17,8 +17,12 @@ services:
 
   notifier:
     build: services/notification-service
+    ports:
+      - "8004:8004"
     environment:
       REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - notifier-data:/app/data
     depends_on:
       redis:
         condition: service_healthy
@@ -63,6 +67,37 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  search-service:
+    build: services/search-service
+    ports:
+      - "8003:8003"
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      MEILI_URL: "http://meilisearch:7700"
+      MEILI_MASTER_KEY: "local-dev-master-key"
+    depends_on:
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_MASTER_KEY: "local-dev-master-key"
+      MEILI_ENV: "development"
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     ports:
@@ -94,3 +129,5 @@ volumes:
   pgdata:
   billing-data:
   reporting-data:
+  meili-data:
+  notifier-data:
