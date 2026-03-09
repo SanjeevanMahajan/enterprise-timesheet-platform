@@ -5,7 +5,12 @@ const REPORTING_URL =
 
 async function reportingGet<T>(path: string): Promise<T> {
   const url = REPORTING_URL ? `${REPORTING_URL}${path}` : path;
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch {
+    throw new Error("Reporting service unreachable");
+  }
   if (!res.ok) {
     throw new Error(`Reporting API error: ${res.status}`);
   }
